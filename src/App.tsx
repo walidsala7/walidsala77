@@ -536,7 +536,13 @@ export default function App() {
 
       {/* Responsive Header / Mobile Nav Toggle */}
       <header className="lg:hidden sticky top-0 z-[60] bg-white/90 dark:bg-[#060B18]/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/80 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div 
+          onClick={() => {
+            setActiveTab('home');
+            setSearchQuery("");
+          }}
+          className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+        >
           <div className="w-8 h-8 bg-gold rounded-lg flex items-center justify-center shadow-md">
             <span className="text-[#060B18] font-black text-xs">WS</span>
           </div>
@@ -571,7 +577,14 @@ export default function App() {
         >
           <div>
             <div className="p-6 flex items-center justify-between border-b border-slate-100 dark:border-slate-800/50">
-              <div className="flex items-center gap-3">
+              <div 
+                onClick={() => {
+                  setActiveTab('home');
+                  setSearchQuery("");
+                  setSidebarOpen(false);
+                }}
+                className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+              >
                 <div className="w-10 h-10 bg-gold rounded-xl flex items-center justify-center shadow-lg shadow-gold/20">
                   <span className="text-[#060B18] font-black text-base">WS</span>
                 </div>
@@ -582,6 +595,24 @@ export default function App() {
               </div>
               <button lg-hidden="true" onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded">
                 <X size={18} />
+              </button>
+            </div>
+
+            {/* Currency, Lang and Theme switcher above Home */}
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-900/30">
+              <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0 text-xs">
+                <button onClick={() => setCurrency('USD')} className={`px-2.5 py-1 rounded-lg font-black tracking-wider transition-all uppercase ${currency === 'USD' ? 'bg-white dark:bg-[#060B18] text-gold shadow-sm' : 'text-slate-500'}`}>USD</button>
+                <button onClick={() => setCurrency('EGP')} className={`px-2.5 py-1 rounded-lg font-black tracking-wider transition-all uppercase ${currency === 'EGP' ? 'bg-white dark:bg-[#060B18] text-gold shadow-sm' : 'text-slate-500'}`}>EGP</button>
+              </div>
+              <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0 text-xs">
+                <button onClick={() => setLang('ar')} className={`px-2 py-1 rounded-lg font-black transition-all ${lang === 'ar' ? 'bg-white dark:bg-[#060B18] text-gold shadow-sm' : 'text-slate-500'}`}>AR</button>
+                <button onClick={() => setLang('en')} className={`px-2 py-1 rounded-lg font-black transition-all ${lang === 'en' ? 'bg-white dark:bg-[#060B18] text-gold shadow-sm' : 'text-slate-500'}`}>EN</button>
+              </div>
+              <button 
+                onClick={() => setIsDarkMode(!isDarkMode)} 
+                className="w-9 h-9 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-500 hover:text-gold"
+              >
+                {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
               </button>
             </div>
 
@@ -610,24 +641,8 @@ export default function App() {
             </nav>
           </div>
 
-          <div className="p-6 border-t border-slate-100 dark:border-slate-800/50 space-y-4">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0 text-xs">
-                <button onClick={() => setCurrency('USD')} className={`px-3 py-1 rounded-lg font-black tracking-wider transition-all uppercase ${currency === 'USD' ? 'bg-white dark:bg-[#060B18] text-gold shadow-sm' : 'text-slate-500'}`}>USD</button>
-                <button onClick={() => setCurrency('EGP')} className={`px-3 py-1 rounded-lg font-black tracking-wider transition-all uppercase ${currency === 'EGP' ? 'bg-white dark:bg-[#060B18] text-gold shadow-sm' : 'text-slate-500'}`}>EGP</button>
-              </div>
-              <div className="hidden lg:flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0 text-xs">
-                <button onClick={() => setLang('ar')} className={`px-2 py-1 rounded-lg font-black transition-all ${lang === 'ar' ? 'bg-white dark:bg-[#060B18] text-gold shadow-sm' : 'text-slate-500'}`}>AR</button>
-                <button onClick={() => setLang('en')} className={`px-2 py-1 rounded-lg font-black transition-all ${lang === 'en' ? 'bg-white dark:bg-[#060B18] text-gold shadow-sm' : 'text-slate-500'}`}>EN</button>
-              </div>
-              <button 
-                onClick={() => setIsDarkMode(!isDarkMode)} 
-                className="w-9 h-9 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-500 hover:text-gold"
-              >
-                {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
-              </button>
-            </div>
-            {isAdminLoggedIn && (
+          {isAdminLoggedIn && (
+            <div className="p-6 border-t border-slate-100 dark:border-slate-800/50">
               <button 
                 onClick={handleAdminLogout} 
                 className="w-full flex items-center justify-center gap-2 py-3 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white rounded-2xl font-bold text-xs uppercase transition-all"
@@ -635,8 +650,8 @@ export default function App() {
                 <LogOut size={14} />
                 <span>{t.adminLogoutButton}</span>
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </aside>
 
         {/* Main Content Area */}

@@ -674,15 +674,8 @@ export default function App() {
             {/* TAB: HOME */}
             {activeTab === 'home' && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-                {/* Branding Block */}
-                <div className="text-center py-4 relative z-10">
-                  <span className="text-gold font-black text-xs uppercase tracking-widest bg-gold/10 px-4 py-1.5 rounded-full border border-gold/15">Smart Phone Store</span>
-                  <h1 className="text-3xl lg:text-5xl font-black mt-4 font-display text-slate-900 dark:text-white leading-none">Smart Phone - Walid Salah</h1>
-                  <p className="text-slate-500 dark:text-slate-400 font-bold text-sm lg:text-base mt-3 max-w-2xl mx-auto leading-relaxed">{t.heroSub}</p>
-                </div>
-
                 {/* Categories Tabs inside Home Tab */}
-                <div className="flex justify-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2 overflow-x-auto no-scrollbar">
+                <div className="flex justify-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto no-scrollbar">
                   {[
                     { id: 'rent', label: t.rentalsTab, icon: <Laptop size={16} /> },
                     { id: 'credit', label: t.creditsTab, icon: <Zap size={16} /> },
@@ -693,8 +686,8 @@ export default function App() {
                       onClick={() => setHomeCategory(cat.id as any)}
                       className={`px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 border transition-all shrink-0 ${
                         homeCategory === cat.id 
-                          ? 'bg-gold text-[#060B18] border-gold shadow-md' 
-                          : 'bg-white dark:bg-[#0D1425] text-slate-400 border-slate-100 dark:border-slate-800/60 hover:border-gold/30'
+                          ? 'bg-[#027a78] text-white border-[#027a78] shadow-md' 
+                          : 'bg-white dark:bg-[#0D1425] text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-[#027a78]'
                       }`}
                     >
                       {cat.icon}
@@ -703,76 +696,110 @@ export default function App() {
                   ))}
                 </div>
 
-                {/* Products Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {products
-                    .filter(p => p.category === homeCategory)
-                    .filter(p => {
-                      const query = searchQuery.toLowerCase();
-                      const nameAr = p.name.toLowerCase();
-                      const nameEn = (p.nameEn || "").toLowerCase();
-                      return nameAr.includes(query) || nameEn.includes(query);
-                    })
-                    .sort((a, b) => {
-                      const orderA = a.sortOrder !== undefined ? a.sortOrder : 9999;
-                      const orderB = b.sortOrder !== undefined ? b.sortOrder : 9999;
-                      if (orderA !== orderB) {
-                        return orderA - orderB;
-                      }
-                      return a.name.localeCompare(b.name);
-                    })
-                    .map(product => {
-                      const available = product.isAvailable !== false;
-                      return (
-                        <div 
-                          key={product.id}
-                          onClick={() => {
-                            if (!available) {
-                              alert(lang === 'ar' ? 'هذه الأداة غير متوفرة حالياً، يرجى التواصل مع الدعم الفني لتفعيلها.' : 'This tool is currently unavailable. Please contact support to activate it.');
-                              return;
-                            }
-                            setSelectedProduct(product); 
-                            setOrderSuccess(false); 
-                            setQuantity(product.minQty || 1); 
-                            setSelectedSize(""); 
-                            setDownloadLink(product.downloadLink || ""); 
-                            setSn("");
-                          }}
-                          className={`bg-white dark:bg-[#0D1425] rounded-2xl border p-4 flex gap-4 items-center group relative cursor-pointer hover:shadow-lg transition-all ${
-                            available ? 'border-slate-100 dark:border-gold/10' : 'border-rose-500/20 opacity-75'
-                          }`}
-                        >
-                          <div className="w-20 h-16 bg-slate-50 dark:bg-slate-800 rounded-xl overflow-hidden shrink-0 border border-slate-100 dark:border-slate-700/60 flex items-center justify-center p-0.5 shadow-inner">
-                            <img src={product.image} alt={product.name} className="h-full w-full object-cover rounded-lg group-hover:scale-105 transition-transform" referrerPolicy="no-referrer" />
-                          </div>
-                          <div className="flex-grow min-w-0 space-y-1">
-                            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${
-                              available ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
-                            }`}>
-                              {available ? (lang === 'ar' ? 'متوفر' : 'Available') : (lang === 'ar' ? 'غير متوفر' : 'Unavailable')}
-                            </span>
-                            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-tight uppercase truncate group-hover:text-gold transition-colors">
-                              {lang === 'en' && product.nameEn ? product.nameEn : product.name}
-                            </h3>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-black text-gold">
-                                {formatPrice(product.priceUsd, false, product.category === 'credit')}
-                              </span>
-                              {product.duration && (
-                                <span className="text-[10px] text-slate-400 font-bold uppercase shrink-0">
-                                  • {product.duration}
+                {/* Section Card Container in GSM Cheap style */}
+                <div className="bg-white dark:bg-[#0D1425] rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-5">
+                  <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+                    <div className="w-1.5 h-5 bg-[#027a78] rounded-full"></div>
+                    <h2 className="font-black text-slate-800 dark:text-slate-100 text-sm uppercase tracking-wider">
+                      {lang === 'ar' ? 'الأدوات المضافة مؤخراً' : 'RECENT ADDED'}
+                    </h2>
+                  </div>
+
+                  {/* Products Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {products
+                      .filter(p => p.category === homeCategory)
+                      .filter(p => {
+                        const query = searchQuery.toLowerCase();
+                        const nameAr = p.name.toLowerCase();
+                        const nameEn = (p.nameEn || "").toLowerCase();
+                        return nameAr.includes(query) || nameEn.includes(query);
+                      })
+                      .sort((a, b) => {
+                        const orderA = a.sortOrder !== undefined ? a.sortOrder : 9999;
+                        const orderB = b.sortOrder !== undefined ? b.sortOrder : 9999;
+                        if (orderA !== orderB) {
+                          return orderA - orderB;
+                        }
+                        return a.name.localeCompare(b.name);
+                      })
+                      .map(product => {
+                        const available = product.isAvailable !== false;
+                        return (
+                          <div 
+                            key={product.id}
+                            onClick={() => {
+                              if (!available) {
+                                alert(lang === 'ar' ? 'هذه الأداة غير متوفرة حالياً، يرجى التواصل مع الدعم الفني لتفعيلها.' : 'This tool is currently unavailable. Please contact support to activate it.');
+                                return;
+                              }
+                              setSelectedProduct(product); 
+                              setOrderSuccess(false); 
+                              setQuantity(product.minQty || 1); 
+                              setSelectedSize(""); 
+                              setDownloadLink(product.downloadLink || ""); 
+                              setSn("");
+                            }}
+                            className={`p-3 rounded-lg border bg-slate-50/50 dark:bg-slate-900/40 flex items-center gap-3.5 group relative cursor-pointer hover:border-[#027a78] hover:shadow-md transition-all ${
+                              available ? 'border-slate-200 dark:border-slate-800' : 'border-rose-500/20 opacity-75'
+                            }`}
+                          >
+                            <div className="w-14 h-14 bg-[#027a78]/10 dark:bg-[#027a78]/20 rounded-lg overflow-hidden shrink-0 border border-[#027a78]/20 flex items-center justify-center p-1">
+                              <img src={product.image} alt={product.name} className="h-full w-full object-contain rounded group-hover:scale-105 transition-transform" referrerPolicy="no-referrer" />
+                            </div>
+                            <div className="flex-grow min-w-0 space-y-1.5">
+                              <h3 className="font-bold text-slate-800 dark:text-slate-100 text-xs leading-snug uppercase truncate group-hover:text-[#027a78] dark:group-hover:text-teal-400 transition-colors">
+                                {lang === 'en' && product.nameEn ? product.nameEn : product.name}
+                              </h3>
+                              <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                                <span className="bg-cyan-100 dark:bg-cyan-950/60 text-[#027a78] dark:text-cyan-300 font-extrabold px-2 py-0.5 rounded uppercase">
+                                  {formatPrice(product.priceUsd, false, product.category === 'credit')}
                                 </span>
-                              )}
+                                {product.duration ? (
+                                  <span className="bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-extrabold px-2 py-0.5 rounded uppercase">
+                                    {product.duration}
+                                  </span>
+                                ) : (
+                                  <span className="bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-extrabold px-2 py-0.5 rounded uppercase">
+                                    {available ? 'INSTANT' : 'UNAVAILABLE'}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                  </div>
                 </div>
 
-                {/* Subtitle placed under the store grid section as requested */}
-                <div className="text-center pt-8 border-t border-slate-100 dark:border-slate-800/80">
-                  <p className="text-gold font-black text-sm tracking-wide leading-relaxed font-sans select-none">{t.subtitle}</p>
+                {/* WE ARE OFFICIAL SELLER Section */}
+                <div className="bg-white dark:bg-[#0D1425] rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-5">
+                  <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+                    <div className="w-1.5 h-5 bg-[#027a78] rounded-full"></div>
+                    <h2 className="font-black text-slate-800 dark:text-slate-100 text-sm uppercase tracking-wider">
+                      {lang === 'ar' ? 'موزع رسمي معتمد' : 'WE ARE OFFICIAL SELLER'}
+                    </h2>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                    {[
+                      { name: 'HYDRA TOOL', img: 'https://i.ibb.co/mVKsYxm0/DSFDSFSDF.png' },
+                      { name: 'CHIMERA', img: 'https://i.ibb.co/PZpB3tkX/chimera.png' },
+                      { name: 'iREMOVAL PRO', img: 'https://i.ibb.co/7t8DFxkF/dft-pro-tool.png' },
+                      { name: 'TFM TOOL', img: 'https://i.ibb.co/Z1BQrwcd/ASWA.png' },
+                      { name: 'UNLOCKTOOL', img: 'https://i.ibb.co/b52htYz1/fdg.png' },
+                      { name: 'DFT PRO', img: 'https://i.ibb.co/7t8DFxkF/dft-pro-tool.png' }
+                    ].map((partner, idx) => (
+                      <div key={idx} className="bg-slate-900 rounded-lg p-3 flex flex-col items-center justify-center border border-slate-800 hover:border-[#027a78] transition-all h-20">
+                        <img src={partner.img} alt={partner.name} className="max-h-12 max-w-full object-contain" referrerPolicy="no-referrer" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Subtitle placed under the store grid section */}
+                <div className="text-center pt-4">
+                  <p className="text-[#027a78] dark:text-teal-400 font-bold text-xs tracking-wide leading-relaxed">{t.subtitle}</p>
                 </div>
               </motion.div>
             )}
@@ -1107,6 +1134,48 @@ export default function App() {
                 )}
               </motion.div>
             )}
+            {/* Teal Footer Features Banner */}
+            <div className="max-w-6xl mx-auto mt-12 mb-6 bg-[#027a78] text-white rounded-xl p-4 shadow-md grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-bold">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-[#015856] flex items-center justify-center text-amber-300 shrink-0 text-sm">
+                  ⚡
+                </div>
+                <div>
+                  <p className="font-extrabold text-white leading-tight">{lang === 'ar' ? 'تسليم سريع' : 'Quick Delivery'}</p>
+                  <p className="text-[10px] text-teal-100 font-normal">{lang === 'ar' ? 'النتائج خلال دقائق' : 'Results within minutes'}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-[#015856] flex items-center justify-center text-amber-300 shrink-0 text-sm">
+                  🛡️
+                </div>
+                <div>
+                  <p className="font-extrabold text-white leading-tight">{lang === 'ar' ? 'آمن 100%' : '100% Secure'}</p>
+                  <p className="text-[10px] text-teal-100 font-normal">{lang === 'ar' ? 'منصة مشفرة ومحميّة' : 'SSL encrypted platform'}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-[#015856] flex items-center justify-center text-amber-300 shrink-0 text-sm">
+                  🎧
+                </div>
+                <div>
+                  <p className="font-extrabold text-white leading-tight">{lang === 'ar' ? 'دعم 24/7' : '24/7 Support'}</p>
+                  <p className="text-[10px] text-teal-100 font-normal">{lang === 'ar' ? 'جاهزون لمساعدتك دائماً' : 'Always here to help you'}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-[#015856] flex items-center justify-center text-amber-300 shrink-0 text-sm">
+                  💳
+                </div>
+                <div>
+                  <p className="font-extrabold text-white leading-tight">{lang === 'ar' ? 'شحن سهل' : 'Easy Recharge'}</p>
+                  <p className="text-[10px] text-teal-100 font-normal">{lang === 'ar' ? 'فودافون كاش، إنستا باي، بينانس' : 'Binance, Vodafone, InstaPay'}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </main>
       </div>

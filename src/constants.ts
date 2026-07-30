@@ -32,7 +32,7 @@ export const productsData: Product[] = [
     { id: 21, name: "T-TOOL PRO", priceUsd: 4, duration: "6 hours", image: "https://i.ibb.co/C5znJK1G/image.png", category: 'rent' },
     { id: 10, name: "E-GSM Rent", priceUsd: 5, image: "https://i.ibb.co/HT0NFsdJ/SDADA.png", category: 'rent' },
     { id: 18, name: "RENT FRT TOOL", priceUsd: 5, image: "https://i.ibb.co/6RWmFLx3/GHFHF.png", category: 'rent' },
-    { id: 6, name: "SamsungTool.us", priceUsd: 8, duration: "12 hours", image: "https://i.ibb.co/kghhQB2b/ASDSADAF.png", category: 'rent' },
+    { id: 6, name: "SamsungTool.us", priceUsd: 5, duration: "12 hours", image: "https://i.ibb.co/kghhQB2b/ASDSADAF.png", category: 'rent' },
     { id: 19, name: "Pandora tool Rent", priceUsd: 10, duration: "48 hours", image: "https://i.ibb.co/tPLP47Mg/GFHHFH.png", category: 'rent' },
     { id: 102, name: "Android Multi Tool Credit", priceUsd: 1.30, image: "https://i.ibb.co/dszpmdjm/zx.png", category: 'credit' },
     { id: 103, name: "TSM Tool Credit", priceUsd: 1.30, image: "https://i.ibb.co/r2xLTz9n/as.png", category: 'credit' },

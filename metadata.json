@@ -1,5 +1,6 @@
 {
   "name": "Smart Phone - Walid Salah",
   "description": "Smart Phone - Walid Salah: Premium mobile software tool rentals, credits, and server services.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

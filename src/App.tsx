@@ -10,7 +10,7 @@ import {
 import { 
   TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, EXCHANGE_RATE, CASH_FEE_EGP, VODAFONE_NUMBER, 
   VODAFONE_QR_URL, BINANCE_ID, BINANCE_QR_URL, INSTAPAY_NUMBER, INSTAPAY_LOGO_URL, 
-  PAYPAL_LINK, PAYPAL_LOGO_URL, WHATSAPP_LINK, productsData, translations 
+  WHATSAPP_LINK, productsData, translations 
 } from './constants';
 import { Product, Language, Currency, OrderStatus, RemoteTool, PaymentType, Order } from './types';
 import {
@@ -18,6 +18,7 @@ import {
   subscribeToProducts,
   subscribeToOrders,
   saveProductToDb,
+  updateProductFieldInDb,
   deleteProductFromDb,
   saveOrderToDb,
   updateOrderStatusInDb
@@ -80,9 +81,23 @@ export default function App() {
   const [formCategory, setFormCategory] = useState<Product['category']>('rent');
   const [formIsAvailable, setFormIsAvailable] = useState(true);
   const [formRequiresSN, setFormRequiresSN] = useState(false);
+  const [formHideQuantity, setFormHideQuantity] = useState(false);
   const [formTooltip, setFormTooltip] = useState("");
 
   const t = translations[lang as keyof typeof translations];
+
+  // Helper to determine if a product has a fixed single quantity (no quantity selector)
+  const isProductFixedSingleOrder = (prod: Product | null) => {
+    if (!prod) return false;
+    return Boolean(
+      prod.sizeOptions || 
+      prod.id === 203 || 
+      prod.id === 1783948579571 || 
+      prod.hideQuantity || 
+      prod.name.toLowerCase().includes('frp unlock xiaomi') ||
+      (prod.nameEn && prod.nameEn.toLowerCase().includes('frp unlock xiaomi'))
+    );
+  };
 
   // Load and sync products & orders with Firestore in real-time
   useEffect(() => {
@@ -167,27 +182,14 @@ export default function App() {
     notifyVisit();
   }, []);
 
-  const saveProducts = async (newProducts: Product[]) => {
-    setProducts(newProducts);
-    // Write each product to Firestore to ensure consistency
+  const toggleProductAvailability = async (productId: number, currentAvailable: boolean | undefined) => {
+    const newStatus = currentAvailable === false ? true : false;
+    // Optimistic local update
+    setProducts(prev => prev.map(p => p.id === productId ? { ...p, isAvailable: newStatus } : p));
     try {
-      for (const prod of newProducts) {
-        await saveProductToDb(prod);
-      }
+      await updateProductFieldInDb(productId, { isAvailable: newStatus });
     } catch (e) {
-      console.error("Error saving products to Firestore:", e);
-    }
-  };
-
-  const saveOrders = async (newOrders: Order[]) => {
-    setOrders(newOrders);
-    // Write each order to Firestore to ensure consistency
-    try {
-      for (const ord of newOrders) {
-        await saveOrderToDb(ord);
-      }
-    } catch (e) {
-      console.error("Error saving orders to Firestore:", e);
+      console.error("Error updating product availability in Firestore:", e);
     }
   };
 
@@ -308,10 +310,11 @@ export default function App() {
 
   const formatPrice = (usdAmount: number, useQuantity = false, isCredit = false) => {
     let finalUsd = usdAmount;
-    if (useQuantity) finalUsd = usdAmount * quantity;
+    const isSingle = isProductFixedSingleOrder(selectedProduct);
+    if (useQuantity && !isSingle) finalUsd = usdAmount * quantity;
     if (currency === 'USD') return `$${finalUsd.toFixed(2)}`;
     let finalEgp = finalUsd * EXCHANGE_RATE;
-    if (useQuantity && paymentType === 'vodafone' && !isCredit) finalEgp += CASH_FEE_EGP;
+    if (useQuantity && !isSingle && paymentType === 'vodafone' && !isCredit) finalEgp += CASH_FEE_EGP;
     return `${Math.round(finalEgp)} EGP`;
   };
 
@@ -330,12 +333,14 @@ export default function App() {
       ? selectedProduct.sizePrices[selectedSize] 
       : selectedProduct.priceUsd;
 
+    const isSingle = isProductFixedSingleOrder(selectedProduct);
+
     let message = `🚀 New Order\n🔢 Order ID: ${newOrderId}\n\n📦 Product: ${lang === 'en' && selectedProduct.nameEn ? selectedProduct.nameEn : selectedProduct.name}\n`;
     if (selectedProduct.category === 'credit' || selectedProduct.category === 'server') {
       if (selectedProduct.requiresSN) message += `🆔 SN: ${sn}\n`;
       if (selectedProduct.sizeOptions) {
         message += `📏 Size: ${selectedSize}\n🔗 Link: ${downloadLink}\n`;
-      } else {
+      } else if (!isSingle) {
         message += `🔢 Qty: ${quantity}\n`;
       }
       if (selectedProduct.category === 'credit') message += `📧 Email: ${email}\n`;
@@ -349,7 +354,6 @@ export default function App() {
     if (paymentType === 'vodafone') message += `📱 Method: Vodafone Cash\n📞 From: ${senderPhone}\n`;
     else if (paymentType === 'binance') message += `🔶 Method: Binance\n🧾 ID: ${binanceTx}\n`;
     else if (paymentType === 'instapay') message += `💸 Method: InstaPay\n📞 From: ${senderPhone}\n`;
-    else if (paymentType === 'paypal') message += `🅿️ Method: PayPal\n👤 From: ${senderPhone}\n`;
     
     const newOrder: Order = {
       id: newOrderId,
@@ -357,7 +361,7 @@ export default function App() {
       productImage: selectedProduct.image,
       category: selectedProduct.category,
       priceUsd: currentPrice,
-      quantity: selectedProduct.sizeOptions ? 1 : quantity,
+      quantity: isSingle ? 1 : quantity,
       totalPrice: formatPrice(currentPrice, true, selectedProduct.category !== 'rent'),
       status: "pending",
       timestamp: Date.now(),
@@ -402,15 +406,14 @@ export default function App() {
       ? senderPhone.trim().length >= 11 
       : paymentType === 'instapay' 
         ? senderPhone.trim().length >= 11 
-        : paymentType === 'paypal'
-          ? senderPhone.trim().length > 2
-          : binanceTx.trim().length > 0;
+        : binanceTx.trim().length > 0;
+    const isSingle = isProductFixedSingleOrder(selectedProduct);
     if (selectedProduct.category === 'credit' || selectedProduct.category === 'server') {
       const isContactValid = selectedProduct.category === 'credit' ? email.trim().includes('@') : whatsappNumber.trim().length >= 11;
       if (selectedProduct.sizeOptions) {
         return isRemoteValid && isPaymentValid && isContactValid && selectedSize !== "" && downloadLink.trim().length > 5;
       }
-      return isRemoteValid && isPaymentValid && isContactValid && quantity >= (selectedProduct.minQty || 1);
+      return isRemoteValid && isPaymentValid && isContactValid && (isSingle ? true : quantity >= (selectedProduct.minQty || 1));
     }
     return isRemoteValid && isPaymentValid;
   };
@@ -425,6 +428,7 @@ export default function App() {
     setFormCategory("rent");
     setFormIsAvailable(true);
     setFormRequiresSN(false);
+    setFormHideQuantity(false);
     setFormTooltip("");
     setIsAddingProduct(true);
   };
@@ -438,6 +442,7 @@ export default function App() {
     setFormCategory(prod.category);
     setFormIsAvailable(prod.isAvailable !== false);
     setFormRequiresSN(!!prod.requiresSN);
+    setFormHideQuantity(!!prod.hideQuantity);
     setFormTooltip(prod.tooltip || "");
     setEditingProduct(prod);
   };
@@ -446,23 +451,36 @@ export default function App() {
     e.preventDefault();
     if (!formNameAr.trim() || !formImage.trim()) return;
 
+    const id = editingProduct ? editingProduct.id : Date.now();
     const savedItem: Product = {
-      id: editingProduct ? editingProduct.id : Date.now(),
-      name: formNameAr,
-      nameEn: formNameEn || undefined,
+      ...(editingProduct || {}),
+      id,
+      name: formNameAr.trim(),
+      nameEn: formNameEn.trim() || undefined,
       priceUsd: Number(formPrice),
-      duration: formDuration || undefined,
-      image: formImage,
+      duration: formDuration.trim() || undefined,
+      image: formImage.trim(),
       category: formCategory,
       isAvailable: formIsAvailable,
       requiresSN: formRequiresSN,
-      tooltip: formTooltip || undefined,
+      hideQuantity: formHideQuantity,
+      tooltip: formTooltip.trim() || undefined,
     };
+
+    // Optimistic update so admin sees immediate persistence without stale snap reversion
+    setProducts(prev => {
+      const exists = prev.some(p => p.id === id);
+      if (exists) {
+        return prev.map(p => p.id === id ? savedItem : p);
+      }
+      return [savedItem, ...prev];
+    });
 
     try {
       await saveProductToDb(savedItem);
     } catch (err) {
       console.error("Error saving product:", err);
+      alert(lang === 'ar' ? "حدث خطأ أثناء حفظ التعديلات في قاعدة البيانات" : "Error saving changes to database");
     }
 
     setIsAddingProduct(false);
@@ -1029,10 +1047,7 @@ export default function App() {
                                   <div className="flex items-center gap-4 shrink-0">
                                     {/* Availability Status Quick Switcher */}
                                     <button 
-                                      onClick={() => {
-                                        const updated = products.map(p => p.id === product.id ? { ...p, isAvailable: p.isAvailable === false } : p);
-                                        saveProducts(updated);
-                                      }}
+                                      onClick={() => toggleProductAvailability(product.id, product.isAvailable)}
                                       className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border transition-all ${
                                         product.isAvailable !== false
                                           ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/25'
@@ -1281,7 +1296,7 @@ export default function App() {
                       )}
 
                       {/* Regular Quantity for credit/server */}
-                      {!selectedProduct.sizeOptions && selectedProduct.id !== 203 && selectedProduct.category !== 'rent' && (
+                      {!isProductFixedSingleOrder(selectedProduct) && selectedProduct.category !== 'rent' && (
                         <div>
                           <label className="text-xs font-black text-slate-400 uppercase tracking-wider block mb-1">{t.quantityLabel}</label>
                           <input type="number" value={quantity} onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))} className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border focus:border-gold outline-none font-bold text-center" />
@@ -1333,10 +1348,12 @@ export default function App() {
                     {/* Step 3: Payment Type selector */}
                     <div className="space-y-3">
                       <label className="text-xs font-black text-slate-400 uppercase tracking-wider block">{t.paymentMethod}</label>
-                      <div className="grid grid-cols-4 gap-2">
-                        {['vodafone', 'instapay', 'binance', 'paypal'].map(pt => (
-                          <button key={pt} onClick={() => setPaymentType(pt as any)} className={`p-2 rounded-xl border flex flex-col items-center gap-1 transition-all ${paymentType === pt ? 'border-gold bg-gold/5 text-gold' : 'border-slate-100 dark:border-slate-800/60 bg-transparent'}`}>
-                            <span className="text-[8px] font-black uppercase tracking-wider truncate block w-full text-center">{pt}</span>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(['vodafone', 'instapay', 'binance'] as const).map(pt => (
+                          <button key={pt} onClick={() => setPaymentType(pt)} className={`p-2.5 rounded-xl border flex flex-col items-center gap-1 transition-all ${paymentType === pt ? 'border-gold bg-gold/5 text-gold' : 'border-slate-100 dark:border-slate-800/60 bg-transparent'}`}>
+                            <span className="text-[10px] font-black uppercase tracking-wider truncate block w-full text-center">
+                              {pt === 'vodafone' ? (lang === 'ar' ? 'فودافون كاش' : 'Vodafone') : pt === 'instapay' ? 'InstaPay' : 'Binance'}
+                            </span>
                           </button>
                         ))}
                       </div>
@@ -1365,12 +1382,6 @@ export default function App() {
                             <span className="text-xl font-mono font-black text-gold block">{BINANCE_ID}</span>
                             <button onClick={() => handleCopy(BINANCE_ID, 'cp_b')} className="px-3 py-1 bg-white dark:bg-[#060B18] border rounded font-bold text-[10px]">{copyStatus === 'cp_b' ? t.copied : t.copy}</button>
                             <p className="text-[10px] text-slate-400 leading-tight">{t.instructionBinance}</p>
-                          </div>
-                        )}
-                        {paymentType === 'paypal' && (
-                          <div className="text-center space-y-2">
-                            <a href={PAYPAL_LINK} target="_blank" rel="noreferrer" className="inline-block px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs uppercase transition-colors">PayPal Link</a>
-                            <p className="text-[10px] text-slate-400 leading-tight">{t.instructionPaypal}</p>
                           </div>
                         )}
 
@@ -1481,6 +1492,11 @@ export default function App() {
                 <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
                   <span className="font-bold text-slate-400">Requires SN (Serial Number)</span>
                   <input type="checkbox" checked={formRequiresSN} onChange={(e) => setFormRequiresSN(e.target.checked)} className="w-4 h-4 text-gold" />
+                </div>
+
+                <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                  <span className="font-bold text-slate-400">{lang === 'ar' ? 'إخفاء حقل الكمية (طلب فردي ثابت)' : 'Hide Quantity Field (Fixed Single Order)'}</span>
+                  <input type="checkbox" checked={formHideQuantity} onChange={(e) => setFormHideQuantity(e.target.checked)} className="w-4 h-4 text-gold" />
                 </div>
 
                 {/* Form Buttons */}

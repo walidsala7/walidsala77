@@ -15,6 +15,7 @@ export interface Product {
   downloadLink?: string;
   isAvailable?: boolean;
   sortOrder?: number;
+  hideQuantity?: boolean;
 }
 
 export interface Order {
@@ -43,4 +44,4 @@ export type Language = 'ar' | 'en';
 export type Currency = 'USD' | 'EGP';
 export type OrderStatus = 'pending' | 'accepted' | 'rejected';
 export type RemoteTool = 'ultra' | 'anydesk';
-export type PaymentType = 'vodafone' | 'binance' | 'instapay' | 'paypal';
+export type PaymentType = 'vodafone' | 'binance' | 'instapay';

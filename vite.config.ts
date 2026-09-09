@@ -23,12 +23,12 @@ export default defineConfig(({mode}) => {
           orientation: 'portrait',
           icons: [
             {
-              src: 'https://i.ibb.co/dszpmdjm/zx.png',
+              src: '/ws-icon-192.png',
               sizes: '192x192',
               type: 'image/png'
             },
             {
-              src: 'https://i.ibb.co/dszpmdjm/zx.png',
+              src: '/ws-icon-512.png',
               sizes: '512x512',
               type: 'image/png'
             }

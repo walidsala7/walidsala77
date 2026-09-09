@@ -10,8 +10,6 @@ export const BINANCE_ID = "1017392350";
 export const BINANCE_QR_URL = "https://i.ibb.co/TM2f81k6/0x0.png";
 export const INSTAPAY_NUMBER = "01156003509";
 export const INSTAPAY_LOGO_URL = "https://i.ibb.co/WpKtLSBV/000.png";
-export const PAYPAL_LINK = "https://paypal.me/walidsala7?locale.x=ar_EG&country.x=EG";
-export const PAYPAL_LOGO_URL = "https://i.ibb.co/PsVsf1xN/paypal.png";
 export const WHATSAPP_LINK = "https://wa.me/201002240615";
 
 export const productsData: Product[] = [
@@ -81,6 +79,19 @@ export const productsData: Product[] = [
       tooltip: "1-30Min Available Slot | Max 1-6 Hrs | Few Time Fast Manually. Note: no cancellation if delayed, no refund for wrong code, no video proof accepted, no investigation, no refund for double imei, no refund for junk or test imei. Huawei ID & HONOR ID Not Supported.",
       downloadLink: "https://mega.nz/file/LcdwzDjS#o-ep7wL3KG--TejTD0Yu3eYQFLiZH4O1g-s-98T3pNE"
     },
+    { 
+      id: 1783948579571, 
+      name: "FRP Unlock Xiaomi, Redmi,Poco", 
+      nameEn: "FRP Unlock Xiaomi, Redmi,Poco", 
+      priceUsd: 5, 
+      duration: "1_5 min", 
+      image: "https://i.ibb.co/1Y6LDqBS/Chat-GPT-Image-Jun-12-2026-04-28-34-PM.png", 
+      category: 'server', 
+      isAvailable: true, 
+      requiresSN: false, 
+      hideQuantity: true, 
+      tooltip: "android 15&16\nhttps://mega.nz/file/aHJVWTJL#Vd0e_2N-VCkwDT0QIPoTgKlZ8th4iJcQ1-F1r0D7OuA" 
+    },
 ];
 
 export const translations = {
@@ -107,7 +118,6 @@ export const translations = {
         vodafone: "فودافون كاش",
         binance: "بينانس (USDT)",
         instapay: "إنستا باي (InstaPay)",
-        paypal: "باي بال (PayPal)",
         copy: "نسخ",
         copied: "تم النسخ!",
         selectPayment: "تأكيد تفاصيل الإيجار",
@@ -117,7 +127,6 @@ export const translations = {
         instructionBinance: "انسخ الـ ID وأتمم الدفع في تطبيق Binance",
         instructionVodafone: "حول المبلغ للرقم أعلاه (يشمل 5 ج.م رسوم)",
         instructionInstapay: "حول المبلغ لرقم إنستا باي أعلاه",
-        instructionPaypal: "اضغط على الزر أعلاه لإتمام الدفع عبر PayPal",
         ultraId: "ID الخاص بـ UltraViewer",
         ultraPass: "Password الخاص بـ UltraViewer",
         anyDeskId: "ID الخاص بـ AnyDesk",
@@ -207,7 +216,6 @@ export const translations = {
         vodafone: "Vodafone Cash",
         binance: "Binance (USDT)",
         instapay: "InstaPay",
-        paypal: "PayPal",
         copy: "Copy",
         copied: "Copied!",
         selectPayment: "Confirm Rental Details",
@@ -217,7 +225,6 @@ export const translations = {
         instructionBinance: "Copy ID and complete payment in Binance app",
         instructionVodafone: "Transfer to the number above (+ fees included)",
         instructionInstapay: "Transfer to the InstaPay number above",
-        instructionPaypal: "Click the button above to complete payment via PayPal",
         ultraId: "UltraViewer ID",
         ultraPass: "UltraViewer Password",
         anyDeskId: "AnyDesk ID",

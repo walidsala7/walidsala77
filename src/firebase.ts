@@ -75,7 +75,13 @@ export function subscribeToProducts(callback: (products: Product[]) => void) {
 // Save or Update a single product
 export async function saveProductToDb(product: Product) {
   const docRef = doc(productsCollection, product.id.toString());
-  await setDoc(docRef, sanitizeData(product));
+  await setDoc(docRef, sanitizeData(product), { merge: true });
+}
+
+// Update specific fields of a product safely without overwriting other properties
+export async function updateProductFieldInDb(productId: number, fields: Partial<Product>) {
+  const docRef = doc(productsCollection, productId.toString());
+  await updateDoc(docRef, sanitizeData(fields));
 }
 
 // Delete a single product
@@ -84,24 +90,19 @@ export async function deleteProductFromDb(productId: number) {
   await deleteDoc(docRef);
 }
 
-// Initialize default products if none exist
+// Initialize default products ONLY if database is truly empty (0 products)
+// Never touches or overwrites existing products in Firestore
 export async function seedProductsIfEmpty(defaultProducts: Product[]) {
-  const snapshot = await getDocs(productsCollection);
-  if (snapshot.empty) {
-    console.log("Seeding default products in Firestore...");
-    for (const product of defaultProducts) {
-      await saveProductToDb(product);
-    }
-  } else {
-    console.log("Syncing sortOrder of default products in Firestore...");
-    for (const product of defaultProducts) {
-      if (product.sortOrder !== undefined) {
-        const docRef = doc(productsCollection, product.id.toString());
-        await updateDoc(docRef, { sortOrder: product.sortOrder }).catch((err) => {
-          console.log(`Could not update sortOrder for product ${product.id}:`, err.message);
-        });
+  try {
+    const snapshot = await getDocs(productsCollection);
+    if (snapshot.empty) {
+      console.log("Seeding default products in Firestore...");
+      for (const product of defaultProducts) {
+        await saveProductToDb(product);
       }
     }
+  } catch (err) {
+    console.error("Error in seedProductsIfEmpty:", err);
   }
 }
 

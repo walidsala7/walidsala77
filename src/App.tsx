@@ -763,7 +763,11 @@ export default function App() {
                             }`}
                           >
                             <div className="w-14 h-14 bg-[#027a78]/10 dark:bg-[#027a78]/20 rounded-lg overflow-hidden shrink-0 border border-[#027a78]/20 flex items-center justify-center p-1">
-                              <img src={product.image} alt={product.name} className="h-full w-full object-contain rounded group-hover:scale-105 transition-transform" referrerPolicy="no-referrer" />
+                              {product.image ? (
+                                <img src={product.image} alt={product.name} className="h-full w-full object-contain rounded group-hover:scale-105 transition-transform" referrerPolicy="no-referrer" />
+                              ) : (
+                                <Smartphone className="w-7 h-7 text-[#027a78] dark:text-teal-400" />
+                              )}
                             </div>
                             <div className="flex-grow min-w-0 space-y-1.5">
                               <h3 className="font-bold text-slate-800 dark:text-slate-100 text-xs leading-snug uppercase truncate group-hover:text-[#027a78] dark:group-hover:text-teal-400 transition-colors">
@@ -787,31 +791,6 @@ export default function App() {
                           </div>
                         );
                       })}
-                  </div>
-                </div>
-
-                {/* WE ARE OFFICIAL SELLER Section */}
-                <div className="bg-white dark:bg-[#0D1425] rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-5">
-                  <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-3">
-                    <div className="w-1.5 h-5 bg-[#027a78] rounded-full"></div>
-                    <h2 className="font-black text-slate-800 dark:text-slate-100 text-sm uppercase tracking-wider">
-                      {lang === 'ar' ? 'موزع رسمي معتمد' : 'WE ARE OFFICIAL SELLER'}
-                    </h2>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                    {[
-                      { name: 'HYDRA TOOL', img: 'https://i.ibb.co/mVKsYxm0/DSFDSFSDF.png' },
-                      { name: 'CHIMERA', img: 'https://i.ibb.co/PZpB3tkX/chimera.png' },
-                      { name: 'iREMOVAL PRO', img: 'https://i.ibb.co/7t8DFxkF/dft-pro-tool.png' },
-                      { name: 'TFM TOOL', img: 'https://i.ibb.co/Z1BQrwcd/ASWA.png' },
-                      { name: 'UNLOCKTOOL', img: 'https://i.ibb.co/b52htYz1/fdg.png' },
-                      { name: 'DFT PRO', img: 'https://i.ibb.co/7t8DFxkF/dft-pro-tool.png' }
-                    ].map((partner, idx) => (
-                      <div key={idx} className="bg-slate-900 rounded-lg p-3 flex flex-col items-center justify-center border border-slate-800 hover:border-[#027a78] transition-all h-20">
-                        <img src={partner.img} alt={partner.name} className="max-h-12 max-w-full object-contain" referrerPolicy="no-referrer" />
-                      </div>
-                    ))}
                   </div>
                 </div>
 
@@ -1026,7 +1005,11 @@ export default function App() {
                                 <div key={product.id} className="p-4 flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
                                   <div className="flex items-center gap-3 min-w-0">
                                     <div className="w-12 h-10 bg-slate-50 dark:bg-slate-800 rounded-lg overflow-hidden shrink-0 border border-slate-100 dark:border-slate-700 flex items-center justify-center p-0.5">
-                                      <img src={product.image} alt="" className="w-full h-full object-cover rounded-md" referrerPolicy="no-referrer" />
+                                      {product.image ? (
+                                        <img src={product.image} alt="" className="w-full h-full object-cover rounded-md" referrerPolicy="no-referrer" />
+                                      ) : (
+                                        <Smartphone className="w-5 h-5 text-slate-400" />
+                                      )}
                                     </div>
                                     <div className="min-w-0">
                                       <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{product.name}</h4>
@@ -1254,7 +1237,13 @@ export default function App() {
                   <div className="space-y-6">
                     {/* Step 1: Summary */}
                     <div className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/60 flex items-center gap-4">
-                      <img src={selectedProduct.image} className="w-16 h-12 object-cover rounded-lg" alt="" />
+                      {selectedProduct.image ? (
+                        <img src={selectedProduct.image} className="w-16 h-12 object-cover rounded-lg" alt="" />
+                      ) : (
+                        <div className="w-16 h-12 bg-[#027a78]/10 rounded-lg flex items-center justify-center border border-[#027a78]/20 shrink-0">
+                          <Smartphone className="w-6 h-6 text-[#027a78] dark:text-teal-400" />
+                        </div>
+                      )}
                       <div className="flex-grow">
                         <h4 className="font-bold text-sm">{selectedProduct.name}</h4>
                         <span className="text-xs font-black text-gold mt-1 block">

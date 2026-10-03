@@ -12,6 +12,7 @@ import {
   orderBy
 } from "firebase/firestore";
 import { Product, Order } from "./types";
+import { DFT_PRO_IMAGE, UNLOCK_TOOL_IMAGE, TSM_TOOL_IMAGE, CF_TOOLS_IMAGE } from "./constants";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyAUiqnpve7YrZZG_yUGS8d4GpPF-dFZdz0",
@@ -64,7 +65,33 @@ export function subscribeToProducts(callback: (products: Product[]) => void) {
   return onSnapshot(q, (snapshot) => {
     const list: Product[] = [];
     snapshot.forEach((doc) => {
-      list.push(doc.data() as Product);
+      const prod = doc.data() as Product;
+      if (prod.image === "https://i.ibb.co/7t8DFxkF/dft-pro-tool.png") {
+        prod.image = DFT_PRO_IMAGE;
+        updateProductFieldInDb(prod.id, { image: DFT_PRO_IMAGE }).catch(() => {});
+      } else if (prod.image === "https://i.ibb.co/b52htYz1/fdg.png") {
+        prod.image = UNLOCK_TOOL_IMAGE;
+        updateProductFieldInDb(prod.id, { image: UNLOCK_TOOL_IMAGE }).catch(() => {});
+      } else if (prod.image === "https://i.ibb.co/r2xLTz9n/as.png") {
+        prod.image = TSM_TOOL_IMAGE;
+        updateProductFieldInDb(prod.id, { image: TSM_TOOL_IMAGE }).catch(() => {});
+      } else if (prod.image === "https://i.ibb.co/WWnrdFxS/WAD.png") {
+        prod.image = "https://yt3.googleusercontent.com/bRUUbaDpkNBGjaQNNPK0scW4Cj-UsiWIiDJheokzvJ46ZYBAz8NuGnfof7LaJagmhdTM4hZ5WQ=s900-c-k-c0x00ffffff-no-rj";
+        updateProductFieldInDb(prod.id, { image: prod.image }).catch(() => {});
+      } else if (prod.image === "https://i.ibb.co/dszpmdjm/zx.png" || prod.image === "/static/dist/img/logo.png") {
+        prod.image = "";
+        updateProductFieldInDb(prod.id, { image: "" }).catch(() => {});
+      } else if (prod.image === "https://i.ibb.co/N6mZrmj5/ww.png") {
+        prod.image = CF_TOOLS_IMAGE;
+        updateProductFieldInDb(prod.id, { image: CF_TOOLS_IMAGE }).catch(() => {});
+      } else if (prod.image === "https://i.ibb.co/jZGj42qP/Capture.png") {
+        prod.image = "/static/dist/img/logo.ico";
+        updateProductFieldInDb(prod.id, { image: prod.image }).catch(() => {});
+      } else if (prod.image === "https://i.ibb.co/tPLP47Mg/GFHHFH.png") {
+        prod.image = "https://z3x-team.com/wp-content/uploads/2021/03/product-pandora-inner-thumbnail.png";
+        updateProductFieldInDb(prod.id, { image: prod.image }).catch(() => {});
+      }
+      list.push(prod);
     });
     callback(list);
   }, (error) => {

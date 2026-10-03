@@ -804,9 +804,21 @@ export default function App() {
             {/* TAB: ORDERS HISTORY */}
             {activeTab === 'orders' && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 max-w-4xl mx-auto">
-                <div className="flex items-center gap-3 mb-4">
-                  <ClipboardList className="text-gold" />
-                  <h2 className="text-2xl font-black font-display uppercase">{t.ordersTab}</h2>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                  <div className="flex items-center gap-3">
+                    <ClipboardList className="text-gold" />
+                    <h2 className="text-2xl font-black font-display uppercase">{t.ordersTab}</h2>
+                  </div>
+                  <div className="relative w-full sm:w-72">
+                    <Hash className={`absolute ${t.dir === 'rtl' ? 'right-3.5' : 'left-3.5'} top-1/2 -translate-y-1/2 text-slate-400`} size={16} />
+                    <input 
+                      type="text" 
+                      placeholder={t.searchOrdersPlaceholder}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className={`w-full py-2.5 ${t.dir === 'rtl' ? 'pr-9 pl-4' : 'pl-9 pr-4'} rounded-xl border border-slate-200 dark:border-slate-800 focus:border-gold outline-none bg-white dark:bg-[#0D1425] shadow-sm font-bold text-xs`}
+                    />
+                  </div>
                 </div>
                 {orders.length === 0 ? (
                   <div className="text-center py-16 bg-white dark:bg-[#0D1425] rounded-3xl border border-slate-100 dark:border-slate-800">
@@ -816,29 +828,34 @@ export default function App() {
                   </div>
                 ) : (
                   (() => {
-                    if (!searchQuery) {
+                    const cleanQuery = searchQuery.trim().replace(/^(id:?|#)\s*/i, '').trim();
+                    if (!cleanQuery) {
                       return (
                         <div className="text-center py-16 bg-white dark:bg-[#0D1425] rounded-3xl border border-slate-100 dark:border-slate-800">
                           <Hash className="mx-auto text-gold mb-4 animate-pulse" size={40} />
-                          <h3 className="text-lg font-bold text-slate-700 dark:text-white mb-1">{lang === 'ar' ? 'أدخل كود الطلب لمتابعته' : 'Enter Order ID to Track'}</h3>
-                          <p className="text-slate-400 text-sm font-medium max-w-[320px] mx-auto">{lang === 'ar' ? 'يرجى إدخال كود الطلب المكون من أرقام في مربع البحث بالأعلى لمتابعة حالته' : 'Please type your numeric order code in the top search bar to view details'}</p>
+                          <h3 className="text-lg font-bold text-slate-700 dark:text-white mb-1">{lang === 'ar' ? 'البحث برقم الطلب كاملاً' : 'Search by Full Order ID'}</h3>
+                          <p className="text-slate-400 text-sm font-medium max-w-[340px] mx-auto">{lang === 'ar' ? 'يرجى كتابة رقم الطلب كاملاً ليظهر طلبك وتتمكن من متابعته' : 'Please type your complete order ID to track your order'}</p>
                         </div>
                       );
                     }
-                    const filtered = orders.filter(o => o.id.toString() === searchQuery.trim() || o.productName.toLowerCase().includes(searchQuery.toLowerCase()));
+                    const filtered = orders.filter(o => o.id.toString() === cleanQuery);
                     if (filtered.length === 0) {
                       return (
                         <div className="text-center py-16 bg-white dark:bg-[#0D1425] rounded-3xl border border-slate-100 dark:border-slate-800">
                           <Search className="mx-auto text-rose-500 mb-4" size={40} />
-                          <h3 className="text-lg font-bold text-slate-700 dark:text-white mb-1">{lang === 'ar' ? 'لم يتم العثور على أي نتائج' : 'No Matches Found'}</h3>
-                          <p className="text-slate-400 text-sm font-medium">{lang === 'ar' ? 'تأكد من كتابة كود الطلب بشكل صحيح' : 'Verify the order ID and try again'}</p>
+                          <h3 className="text-lg font-bold text-slate-700 dark:text-white mb-1">{lang === 'ar' ? 'لم يتم العثور على هذا الطلب' : 'No Order Found'}</h3>
+                          <p className="text-slate-400 text-sm font-medium">{lang === 'ar' ? 'يرجى التأكد من كتابة رقم الطلب بالكامل وبشكل صحيح' : 'Please verify you typed the complete order ID correctly'}</p>
                         </div>
                       );
                     }
                     return filtered.map(order => (
                       <div key={order.id} className="bg-white dark:bg-[#0D1425] p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center gap-4">
                         <div className="w-16 h-12 bg-slate-50 dark:bg-slate-800 rounded-xl overflow-hidden shrink-0 border border-slate-100 dark:border-slate-700 flex items-center justify-center p-0.5">
-                          <img src={order.productImage} alt={order.productName} className="w-full h-full object-cover rounded-lg" />
+                          {order.productImage ? (
+                            <img src={order.productImage} alt={order.productName} className="w-full h-full object-cover rounded-lg" />
+                          ) : (
+                            <Smartphone className="w-6 h-6 text-[#027a78] dark:text-teal-400" />
+                          )}
                         </div>
                         <div className="flex-grow text-center sm:text-left space-y-1">
                           <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2">

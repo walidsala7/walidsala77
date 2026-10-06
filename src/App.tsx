@@ -24,6 +24,7 @@ import {
   updateOrderStatusInDb,
   TOOL_PERMANENT_IMAGES
 } from './firebase';
+import SnowEffect from './SnowEffect';
 
 const getSafeProductImage = (prod: Product | { id?: number; image?: string } | null | undefined): string => {
   if (!prod) return '/ws-icon.svg';
@@ -563,6 +564,9 @@ export default function App() {
 
   return (
     <div className={`min-h-screen font-sans transition-colors duration-300 relative ${isDarkMode ? 'dark bg-[#060B18] text-slate-100' : 'bg-slate-50 text-slate-900'}`} dir={t.dir}>
+      {/* Falling Snow Effect */}
+      <SnowEffect count={70} isDarkMode={isDarkMode} />
+
       {/* Dynamic Background */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gold/5 blur-[150px] rounded-full"></div>

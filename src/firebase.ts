@@ -59,6 +59,43 @@ const ordersCollection = collection(db, "orders");
 
 // ---------------- PRODUCTS OPERATIONS ----------------
 
+export const TOOL_PERMANENT_IMAGES: Record<number, string> = {
+  5: "/tools/dft-pro.png",
+  8: "/tools/unlock-tool.png",
+  3: "/tools/tsm-tool.png",
+  2: "/tools/android-multi-tool.svg",
+  12: "/tools/eft-pro.svg",
+  13: "/tools/arab-frp.svg",
+  22: "/tools/cm2.svg",
+  11: "/tools/anonyshu.svg",
+  1: "/tools/mdm-fix.svg",
+  7: "/tools/cf-tools.png",
+  9: "/tools/android-win.svg",
+  15: "/tools/tfm-tool.svg",
+  17: "/tools/griffin.svg",
+  14: "/tools/hydra.svg",
+  21: "/tools/t-tool.svg",
+  10: "/tools/egsm.svg",
+  18: "/tools/frt-tool.svg",
+  6: "/tools/samsung-tool.svg",
+  19: "/tools/pandora.svg",
+  102: "/tools/android-multi-tool.svg",
+  103: "/tools/tsm-tool.png",
+  111: "/tools/anonyshu.svg",
+  107: "/tools/cf-tools.png",
+  109: "/tools/android-win.svg",
+  115: "/tools/tfm-tool.svg",
+  114: "/tools/hydra.svg",
+  110: "/tools/egsm.svg",
+  106: "/tools/samsung-tool.svg",
+  120: "/tools/phoenix.svg",
+  104: "/tools/chimera.svg",
+  201: "/tools/apple-id.svg",
+  202: "/tools/halabtech.svg",
+  203: "/tools/honor-frp.svg",
+  1783948579571: "/tools/xiaomi-frp.svg"
+};
+
 // Real-time listener for products
 export function subscribeToProducts(callback: (products: Product[]) => void) {
   const q = query(productsCollection, orderBy("id", "asc"));
@@ -66,30 +103,10 @@ export function subscribeToProducts(callback: (products: Product[]) => void) {
     const list: Product[] = [];
     snapshot.forEach((doc) => {
       const prod = doc.data() as Product;
-      if (prod.image === "https://i.ibb.co/7t8DFxkF/dft-pro-tool.png") {
-        prod.image = DFT_PRO_IMAGE;
-        updateProductFieldInDb(prod.id, { image: DFT_PRO_IMAGE }).catch(() => {});
-      } else if (prod.image === "https://i.ibb.co/b52htYz1/fdg.png") {
-        prod.image = UNLOCK_TOOL_IMAGE;
-        updateProductFieldInDb(prod.id, { image: UNLOCK_TOOL_IMAGE }).catch(() => {});
-      } else if (prod.image === "https://i.ibb.co/r2xLTz9n/as.png") {
-        prod.image = TSM_TOOL_IMAGE;
-        updateProductFieldInDb(prod.id, { image: TSM_TOOL_IMAGE }).catch(() => {});
-      } else if (prod.image === "https://i.ibb.co/WWnrdFxS/WAD.png") {
-        prod.image = "https://yt3.googleusercontent.com/bRUUbaDpkNBGjaQNNPK0scW4Cj-UsiWIiDJheokzvJ46ZYBAz8NuGnfof7LaJagmhdTM4hZ5WQ=s900-c-k-c0x00ffffff-no-rj";
-        updateProductFieldInDb(prod.id, { image: prod.image }).catch(() => {});
-      } else if (prod.image === "https://i.ibb.co/dszpmdjm/zx.png" || prod.image === "/static/dist/img/logo.png") {
-        prod.image = "";
-        updateProductFieldInDb(prod.id, { image: "" }).catch(() => {});
-      } else if (prod.image === "https://i.ibb.co/N6mZrmj5/ww.png") {
-        prod.image = CF_TOOLS_IMAGE;
-        updateProductFieldInDb(prod.id, { image: CF_TOOLS_IMAGE }).catch(() => {});
-      } else if (prod.image === "https://i.ibb.co/jZGj42qP/Capture.png") {
-        prod.image = "/static/dist/img/logo.ico";
-        updateProductFieldInDb(prod.id, { image: prod.image }).catch(() => {});
-      } else if (prod.image === "https://i.ibb.co/tPLP47Mg/GFHHFH.png") {
-        prod.image = "https://z3x-team.com/wp-content/uploads/2021/03/product-pandora-inner-thumbnail.png";
-        updateProductFieldInDb(prod.id, { image: prod.image }).catch(() => {});
+      const permanentImg = TOOL_PERMANENT_IMAGES[prod.id];
+      if (permanentImg && (!prod.image || prod.image.includes("i.ibb.co") || prod.image.startsWith("/static/") || prod.image.includes("yt3.googleusercontent.com"))) {
+        prod.image = permanentImg;
+        updateProductFieldInDb(prod.id, { image: permanentImg }).catch(() => {});
       }
       list.push(prod);
     });

@@ -21,8 +21,20 @@ import {
   updateProductFieldInDb,
   deleteProductFromDb,
   saveOrderToDb,
-  updateOrderStatusInDb
+  updateOrderStatusInDb,
+  TOOL_PERMANENT_IMAGES
 } from './firebase';
+
+const getSafeProductImage = (prod: Product | { id?: number; image?: string } | null | undefined): string => {
+  if (!prod) return '/ws-icon.svg';
+  if (prod.image && !prod.image.includes('i.ibb.co') && !prod.image.startsWith('/static/') && !prod.image.includes('yt3.googleusercontent.com')) {
+    return prod.image;
+  }
+  if (prod.id && TOOL_PERMANENT_IMAGES[prod.id]) {
+    return TOOL_PERMANENT_IMAGES[prod.id];
+  }
+  return prod.image || '/ws-icon.svg';
+};
 
 const WhatsAppIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" className={className} fill="currentColor">
@@ -68,6 +80,7 @@ export default function App() {
   const [isAdminTabVisible, setIsAdminTabVisible] = useState(() => sessionStorage.getItem('ws_admin_tab_visible') === 'true');
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => sessionStorage.getItem('ws_admin_logged') === 'true');
   const [adminPassword, setAdminPassword] = useState("");
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [adminTab, setAdminTab] = useState<'tools' | 'orders'>('tools');
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -358,7 +371,7 @@ export default function App() {
     const newOrder: Order = {
       id: newOrderId,
       productName: selectedProduct.name,
-      productImage: selectedProduct.image,
+      productImage: getSafeProductImage(selectedProduct),
       category: selectedProduct.category,
       priceUsd: currentPrice,
       quantity: isSingle ? 1 : quantity,
@@ -499,7 +512,11 @@ export default function App() {
 
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminPassword === "15102001Ww" || adminPassword === "walidsala7") {
+    const customPass = localStorage.getItem('ws_custom_admin_password');
+    const validPasswords = ["15102001Ww", "walidsala7"];
+    if (customPass) validPasswords.push(customPass);
+
+    if (validPasswords.includes(adminPassword.trim())) {
       setIsAdminLoggedIn(true);
       sessionStorage.setItem('ws_admin_logged', 'true');
     } else {
@@ -763,11 +780,16 @@ export default function App() {
                             }`}
                           >
                             <div className="w-14 h-14 bg-[#027a78]/10 dark:bg-[#027a78]/20 rounded-lg overflow-hidden shrink-0 border border-[#027a78]/20 flex items-center justify-center p-1">
-                              {product.image ? (
-                                <img src={product.image} alt={product.name} className="h-full w-full object-contain rounded group-hover:scale-105 transition-transform" referrerPolicy="no-referrer" />
-                              ) : (
-                                <Smartphone className="w-7 h-7 text-[#027a78] dark:text-teal-400" />
-                              )}
+                              <img 
+                                src={getSafeProductImage(product)} 
+                                alt={product.name} 
+                                className="h-full w-full object-contain rounded group-hover:scale-105 transition-transform" 
+                                referrerPolicy="no-referrer"
+                                onError={(e) => {
+                                  e.currentTarget.onerror = null;
+                                  e.currentTarget.src = TOOL_PERMANENT_IMAGES[product.id] || '/ws-icon.svg';
+                                }}
+                              />
                             </div>
                             <div className="flex-grow min-w-0 space-y-1.5">
                               <h3 className="font-bold text-slate-800 dark:text-slate-100 text-xs leading-snug uppercase truncate group-hover:text-[#027a78] dark:group-hover:text-teal-400 transition-colors">
@@ -851,11 +873,15 @@ export default function App() {
                     return filtered.map(order => (
                       <div key={order.id} className="bg-white dark:bg-[#0D1425] p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center gap-4">
                         <div className="w-16 h-12 bg-slate-50 dark:bg-slate-800 rounded-xl overflow-hidden shrink-0 border border-slate-100 dark:border-slate-700 flex items-center justify-center p-0.5">
-                          {order.productImage ? (
-                            <img src={order.productImage} alt={order.productName} className="w-full h-full object-cover rounded-lg" />
-                          ) : (
-                            <Smartphone className="w-6 h-6 text-[#027a78] dark:text-teal-400" />
-                          )}
+                          <img 
+                            src={order.productImage && !order.productImage.includes('i.ibb.co') ? order.productImage : '/ws-icon.svg'} 
+                            alt={order.productName} 
+                            className="w-full h-full object-contain rounded-lg"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = '/ws-icon.svg';
+                            }}
+                          />
                         </div>
                         <div className="flex-grow text-center sm:text-left space-y-1">
                           <div className="flex flex-wrap justify-center sm:justify-start items-center gap-2">
@@ -953,12 +979,20 @@ export default function App() {
                     <form onSubmit={handleAdminLogin} className="space-y-4">
                       <div className="relative">
                         <input 
-                          type="password"
+                          type={showAdminPassword ? "text" : "password"}
                           value={adminPassword}
                           onChange={(e) => setAdminPassword(e.target.value)}
                           placeholder={t.adminPasswordPlaceholder}
-                          className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-center font-bold outline-none text-slate-900 dark:text-white"
+                          className={`w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-center font-bold outline-none text-slate-900 dark:text-white ${t.dir === 'rtl' ? 'pl-11' : 'pr-11'}`}
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowAdminPassword(!showAdminPassword)}
+                          className={`absolute ${t.dir === 'rtl' ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 text-slate-400 hover:text-gold transition-colors`}
+                          title={showAdminPassword ? "Hide" : "Show"}
+                        >
+                          {showAdminPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
                       </div>
                       <button type="submit" className="w-full py-4 bg-gold hover:bg-[#D4B06A] text-[#060B18] rounded-xl font-black text-sm uppercase transition-all shadow-md active:scale-95">
                         {t.adminLoginButton}
@@ -1022,11 +1056,16 @@ export default function App() {
                                 <div key={product.id} className="p-4 flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
                                   <div className="flex items-center gap-3 min-w-0">
                                     <div className="w-12 h-10 bg-slate-50 dark:bg-slate-800 rounded-lg overflow-hidden shrink-0 border border-slate-100 dark:border-slate-700 flex items-center justify-center p-0.5">
-                                      {product.image ? (
-                                        <img src={product.image} alt="" className="w-full h-full object-cover rounded-md" referrerPolicy="no-referrer" />
-                                      ) : (
-                                        <Smartphone className="w-5 h-5 text-slate-400" />
-                                      )}
+                                      <img 
+                                        src={getSafeProductImage(product)} 
+                                        alt="" 
+                                        className="w-full h-full object-contain rounded-md" 
+                                        referrerPolicy="no-referrer" 
+                                        onError={(e) => {
+                                          e.currentTarget.onerror = null;
+                                          e.currentTarget.src = TOOL_PERMANENT_IMAGES[product.id] || '/ws-icon.svg';
+                                        }}
+                                      />
                                     </div>
                                     <div className="min-w-0">
                                       <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{product.name}</h4>
@@ -1095,7 +1134,15 @@ export default function App() {
                                 <div className="flex justify-between items-start gap-4 flex-wrap">
                                   <div className="flex gap-3 items-center">
                                     <div className="w-12 h-10 bg-slate-50 dark:bg-slate-800 rounded-lg overflow-hidden shrink-0 border border-slate-100 dark:border-slate-700 flex items-center justify-center p-0.5">
-                                      <img src={order.productImage} alt="" className="w-full h-full object-cover rounded-md" />
+                                      <img 
+                                        src={order.productImage && !order.productImage.includes('i.ibb.co') ? order.productImage : '/ws-icon.svg'} 
+                                        alt="" 
+                                        className="w-full h-full object-contain rounded-md" 
+                                        onError={(e) => {
+                                          e.currentTarget.onerror = null;
+                                          e.currentTarget.src = '/ws-icon.svg';
+                                        }}
+                                      />
                                     </div>
                                     <div>
                                       <h4 className="font-bold text-sm">{order.productName}</h4>
@@ -1254,13 +1301,17 @@ export default function App() {
                   <div className="space-y-6">
                     {/* Step 1: Summary */}
                     <div className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/60 flex items-center gap-4">
-                      {selectedProduct.image ? (
-                        <img src={selectedProduct.image} className="w-16 h-12 object-cover rounded-lg" alt="" />
-                      ) : (
-                        <div className="w-16 h-12 bg-[#027a78]/10 rounded-lg flex items-center justify-center border border-[#027a78]/20 shrink-0">
-                          <Smartphone className="w-6 h-6 text-[#027a78] dark:text-teal-400" />
-                        </div>
-                      )}
+                      <div className="w-16 h-12 bg-[#027a78]/10 rounded-lg flex items-center justify-center border border-[#027a78]/20 shrink-0 overflow-hidden p-1">
+                        <img 
+                          src={getSafeProductImage(selectedProduct)} 
+                          className="w-full h-full object-contain rounded-lg" 
+                          alt="" 
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = TOOL_PERMANENT_IMAGES[selectedProduct.id] || '/ws-icon.svg';
+                          }}
+                        />
+                      </div>
                       <div className="flex-grow">
                         <h4 className="font-bold text-sm">{selectedProduct.name}</h4>
                         <span className="text-xs font-black text-gold mt-1 block">

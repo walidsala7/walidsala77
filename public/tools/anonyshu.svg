@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="g_anonyshu" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#14052b"/>
+      <stop offset="50%" stop-color="#320b5e"/>
+      <stop offset="100%" stop-color="#100326"/>
+    </linearGradient>
+    <radialGradient id="glow_anonyshu" cx="50%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#a855f7" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="120" rx="26" fill="url(#g_anonyshu)"/>
+  <rect width="120" height="120" rx="26" fill="url(#glow_anonyshu)"/>
+  <rect x="2" y="2" width="116" height="116" rx="24" fill="none" stroke="#a855f7" stroke-width="1.8" stroke-opacity="0.45"/>
+  <g transform="translate(48, 22) scale(1)">
+    <g transform="scale(1.0)">
+      <svg width="24" height="24" viewBox="0 0 24 24">
+        <path fill="#a855f7" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 6h2v6h-2V7zm0 8h2v2h-2v-2z"/>
+      </svg>
+    </g>
+  </g>
+  <text x="60" y="74" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-weight="900" font-size="12" fill="#FFFFFF" letter-spacing="0.5">ANONYSHU</text>
+  <text x="60" y="88" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-weight="800" font-size="7" fill="#a855f7" letter-spacing="0.8">RENT PRO TOOL</text>
+  <rect x="36" y="96" width="48" height="2.5" rx="1.25" fill="#a855f7" opacity="0.6"/>
+</svg>

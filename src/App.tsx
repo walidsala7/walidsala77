@@ -26,14 +26,18 @@ import {
 } from './firebase';
 
 const getSafeProductImage = (prod: Product | { id?: number; image?: string } | null | undefined): string => {
-  if (!prod) return '/ws-icon.svg';
-  if (prod.image && !prod.image.includes('i.ibb.co') && !prod.image.startsWith('/static/') && !prod.image.includes('yt3.googleusercontent.com')) {
-    return prod.image;
+  const defaultIcon = './ws-icon.svg';
+  if (!prod) return defaultIcon;
+  let img = prod.image;
+  if (!img || img.includes('i.ibb.co') || img.startsWith('/static/') || img.includes('yt3.googleusercontent.com')) {
+    img = prod.id && TOOL_PERMANENT_IMAGES[prod.id] ? TOOL_PERMANENT_IMAGES[prod.id] : defaultIcon;
   }
-  if (prod.id && TOOL_PERMANENT_IMAGES[prod.id]) {
-    return TOOL_PERMANENT_IMAGES[prod.id];
+  if (img.startsWith('/tools/')) {
+    img = '.' + img;
+  } else if (img === '/ws-icon.svg') {
+    img = defaultIcon;
   }
-  return prod.image || '/ws-icon.svg';
+  return img;
 };
 
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -146,17 +150,19 @@ export default function App() {
 
       let geoText = "⚠️ غير قادر على جلب الموقع الجغرافي";
       try {
-        const response = await fetch('https://ipapi.co/json/');
+        const response = await fetch('https://ipwho.is/');
         if (response.ok) {
           const data = await response.json();
-          const country = data.country_name || "";
-          const city = data.city || "";
-          const ip = data.ip || "";
-          const org = data.org || "";
-          geoText = `📍 البلد: ${country}\n🏙️ المدينة: ${city}\n🔌 IP: ${ip}\n🏢 الشبكة: ${org}`;
+          if (data && data.success !== false) {
+            const country = data.country || "";
+            const city = data.city || "";
+            const ip = data.ip || "";
+            const org = data.connection?.org || data.connection?.isp || "";
+            geoText = `📍 البلد: ${country}\n🏙️ المدينة: ${city}\n🔌 IP: ${ip}\n🏢 الشبكة: ${org}`;
+          }
         }
       } catch (err) {
-        console.log("Could not fetch IP info", err);
+        // Silently fallback without rate-limit errors
       }
 
       const userAgent = navigator.userAgent;
@@ -238,18 +244,22 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Telebot updates polling
+  // Telebot updates polling - only when waiting for this session's order
   useEffect(() => {
     let pollInterval: NodeJS.Timeout;
-    const hasPendingOrders = orders.some(o => o.status === "pending");
-    if (hasPendingOrders || (orderSuccess && orderStatus === "pending" && orderId)) {
+    const isWaitingForMyOrder = orderSuccess && orderStatus === "pending" && !!orderId;
+    if (isWaitingForMyOrder) {
+      let isFetching = false;
       pollInterval = setInterval(async () => {
+        if (isFetching) return;
+        isFetching = true;
         try {
           const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}`);
+          if (res.status === 429) {
+            return;
+          }
           const data = await res.json();
-          if (data.ok && data.result.length > 0) {
-            let updatedOrders = [...orders];
-            let changed = false;
+          if (data && data.ok && Array.isArray(data.result) && data.result.length > 0) {
             let maxUpdateId = lastUpdateId;
 
             for (const update of data.result) {
@@ -273,7 +283,7 @@ export default function App() {
                       const act = parts[0].toLowerCase();
                       if (act === 'accept' || act === 'reject') {
                         action = act;
-                        id = parts[1].split('\n')[0].trim(); // Extract ID and ignore any description
+                        id = parts[1].split('\n')[0].trim();
                       }
                     }
                   }
@@ -290,11 +300,14 @@ export default function App() {
             }
             setLastUpdateId(maxUpdateId);
           }
-        } catch (e) {}
-      }, 3000);
+        } catch (e) {
+        } finally {
+          isFetching = false;
+        }
+      }, 5000);
     }
     return () => clearInterval(pollInterval);
-  }, [orderSuccess, orderStatus, orderId, lastUpdateId, orders]);
+  }, [orderSuccess, orderStatus, orderId, lastUpdateId]);
 
   // Checkout timer
   useEffect(() => {
@@ -787,7 +800,7 @@ export default function App() {
                                 referrerPolicy="no-referrer"
                                 onError={(e) => {
                                   e.currentTarget.onerror = null;
-                                  e.currentTarget.src = TOOL_PERMANENT_IMAGES[product.id] || '/ws-icon.svg';
+                                  e.currentTarget.src = TOOL_PERMANENT_IMAGES[product.id] || './ws-icon.svg';
                                 }}
                               />
                             </div>
@@ -874,12 +887,12 @@ export default function App() {
                       <div key={order.id} className="bg-white dark:bg-[#0D1425] p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center gap-4">
                         <div className="w-16 h-12 bg-slate-50 dark:bg-slate-800 rounded-xl overflow-hidden shrink-0 border border-slate-100 dark:border-slate-700 flex items-center justify-center p-0.5">
                           <img 
-                            src={order.productImage && !order.productImage.includes('i.ibb.co') ? order.productImage : '/ws-icon.svg'} 
+                            src={order.productImage && !order.productImage.includes('i.ibb.co') ? order.productImage : './ws-icon.svg'} 
                             alt={order.productName} 
                             className="w-full h-full object-contain rounded-lg"
                             onError={(e) => {
                               e.currentTarget.onerror = null;
-                              e.currentTarget.src = '/ws-icon.svg';
+                              e.currentTarget.src = './ws-icon.svg';
                             }}
                           />
                         </div>
@@ -1063,7 +1076,7 @@ export default function App() {
                                         referrerPolicy="no-referrer" 
                                         onError={(e) => {
                                           e.currentTarget.onerror = null;
-                                          e.currentTarget.src = TOOL_PERMANENT_IMAGES[product.id] || '/ws-icon.svg';
+                                          e.currentTarget.src = TOOL_PERMANENT_IMAGES[product.id] || './ws-icon.svg';
                                         }}
                                       />
                                     </div>
@@ -1135,12 +1148,12 @@ export default function App() {
                                   <div className="flex gap-3 items-center">
                                     <div className="w-12 h-10 bg-slate-50 dark:bg-slate-800 rounded-lg overflow-hidden shrink-0 border border-slate-100 dark:border-slate-700 flex items-center justify-center p-0.5">
                                       <img 
-                                        src={order.productImage && !order.productImage.includes('i.ibb.co') ? order.productImage : '/ws-icon.svg'} 
+                                        src={order.productImage && !order.productImage.includes('i.ibb.co') ? order.productImage : './ws-icon.svg'} 
                                         alt="" 
                                         className="w-full h-full object-contain rounded-md" 
                                         onError={(e) => {
                                           e.currentTarget.onerror = null;
-                                          e.currentTarget.src = '/ws-icon.svg';
+                                          e.currentTarget.src = './ws-icon.svg';
                                         }}
                                       />
                                     </div>
@@ -1308,7 +1321,7 @@ export default function App() {
                           alt="" 
                           onError={(e) => {
                             e.currentTarget.onerror = null;
-                            e.currentTarget.src = TOOL_PERMANENT_IMAGES[selectedProduct.id] || '/ws-icon.svg';
+                            e.currentTarget.src = TOOL_PERMANENT_IMAGES[selectedProduct.id] || './ws-icon.svg';
                           }}
                         />
                       </div>

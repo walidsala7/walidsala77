@@ -5,7 +5,7 @@ import {
   XCircle, Clock, CreditCard, Hash, User, Mail, Phone, Facebook, Instagram, Link,
   ChevronRight, AlertCircle, ArrowRight, ShieldCheck, Zap, Info, Moon, Sun, Home, Menu,
   Plus, Trash2, Edit3, Save, Lock, Unlock, Settings, Headphones, ClipboardList, LogOut,
-  Eye, EyeOff
+  Eye, EyeOff, Download
 } from 'lucide-react';
 import { 
   TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, EXCHANGE_RATE, CASH_FEE_EGP, VODAFONE_NUMBER, 
@@ -1040,6 +1040,15 @@ export default function App() {
                         >
                           {t.adminManageOrders} ({orders.length})
                         </button>
+                        <a 
+                          href="./smart-phone-server.zip"
+                          download="smart-phone-server.zip"
+                          className="px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wide border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-600 dark:text-emerald-400 hover:text-white transition-all flex items-center gap-1.5 shadow-sm"
+                          title={lang === 'ar' ? 'تحميل كامل ملفات السيرفر والموقع للكمبيوتر (ZIP)' : 'Download Server Files (ZIP)'}
+                        >
+                          <Download size={14} />
+                          <span>{lang === 'ar' ? 'تحميل السيرفر (ZIP)' : 'Download Server (ZIP)'}</span>
+                        </a>
                       </div>
                     </div>
 

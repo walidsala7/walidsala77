@@ -74,6 +74,7 @@ export default function App() {
   const [senderPhone, setSenderPhone] = useState("");
   const [binanceTx, setBinanceTx] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
@@ -98,6 +99,8 @@ export default function App() {
   const [formCategory, setFormCategory] = useState<Product['category']>('rent');
   const [formIsAvailable, setFormIsAvailable] = useState(true);
   const [formRequiresSN, setFormRequiresSN] = useState(false);
+  const [formRequiresUsername, setFormRequiresUsername] = useState(false);
+  const [formRequiresEmail, setFormRequiresEmail] = useState(false);
   const [formHideQuantity, setFormHideQuantity] = useState(false);
   const [formTooltip, setFormTooltip] = useState("");
 
@@ -109,6 +112,9 @@ export default function App() {
     return Boolean(
       prod.sizeOptions || 
       prod.id === 203 || 
+      prod.id === 204 || 
+      prod.id === 205 || 
+      prod.id === 206 || 
       prod.id === 1783948579571 || 
       prod.hideQuantity || 
       prod.name.toLowerCase().includes('frp unlock xiaomi') ||
@@ -364,13 +370,14 @@ export default function App() {
     let message = `🚀 New Order\n🔢 Order ID: ${newOrderId}\n\n📦 Product: ${lang === 'en' && selectedProduct.nameEn ? selectedProduct.nameEn : selectedProduct.name}\n`;
     if (selectedProduct.category === 'credit' || selectedProduct.category === 'server') {
       if (selectedProduct.requiresSN) message += `🆔 SN: ${sn}\n`;
+      if (selectedProduct.requiresUsername) message += `👤 Username: ${username}\n`;
       if (selectedProduct.sizeOptions) {
         message += `📏 Size: ${selectedSize}\n🔗 Link: ${downloadLink}\n`;
       } else if (!isSingle) {
         message += `🔢 Qty: ${quantity}\n`;
       }
-      if (selectedProduct.category === 'credit') message += `📧 Email: ${email}\n`;
-      else message += `📱 WhatsApp: ${whatsappNumber}\n`;
+      if (selectedProduct.category === 'credit' || selectedProduct.requiresEmail || email.trim()) message += `📧 Email: ${email}\n`;
+      if (whatsappNumber.trim()) message += `📱 WhatsApp: ${whatsappNumber}\n`;
     }
     message += `💰 Total: ${formatPrice(currentPrice, true, selectedProduct.category !== 'rent')}\n`;
     if (selectedProduct.category === 'rent') {
@@ -394,8 +401,9 @@ export default function App() {
       paymentType: paymentType,
       details: {
         sn: selectedProduct.requiresSN ? sn : undefined,
-        email: selectedProduct.category === 'credit' ? email : undefined,
-        whatsappNumber: selectedProduct.category === 'server' ? whatsappNumber : undefined,
+        username: selectedProduct.requiresUsername ? username : undefined,
+        email: (selectedProduct.category === 'credit' || selectedProduct.requiresEmail || email.trim()) ? email : undefined,
+        whatsappNumber: (selectedProduct.category === 'server' || whatsappNumber.trim()) ? (whatsappNumber.trim() || undefined) : undefined,
         remoteTool: selectedProduct.category === 'rent' ? remoteTool : undefined,
         ultraId: remoteTool === 'ultra' ? ultraId : undefined,
         anyDeskId: remoteTool === 'anydesk' ? anyDeskId : undefined,
@@ -427,6 +435,8 @@ export default function App() {
   const isFormValid = () => {
     if (!selectedProduct) return false;
     if (selectedProduct.requiresSN && !sn.trim()) return false;
+    if (selectedProduct.requiresUsername && !username.trim()) return false;
+    if (selectedProduct.requiresEmail && (!email.trim() || !email.includes('@'))) return false;
     const isRemoteValid = selectedProduct.category !== 'rent' || (remoteTool === 'ultra' ? (ultraId.trim() && ultraPass.trim()) : anyDeskId.trim());
     const isPaymentValid = paymentType === 'vodafone' 
       ? senderPhone.trim().length >= 11 
@@ -435,7 +445,14 @@ export default function App() {
         : binanceTx.trim().length > 0;
     const isSingle = isProductFixedSingleOrder(selectedProduct);
     if (selectedProduct.category === 'credit' || selectedProduct.category === 'server') {
-      const isContactValid = selectedProduct.category === 'credit' ? email.trim().includes('@') : whatsappNumber.trim().length >= 11;
+      let isContactValid = true;
+      if (selectedProduct.category === 'credit') {
+        isContactValid = email.trim().includes('@');
+      } else if (selectedProduct.category === 'server') {
+        if (!selectedProduct.requiresUsername && !selectedProduct.requiresEmail) {
+          isContactValid = whatsappNumber.trim().length >= 11;
+        }
+      }
       if (selectedProduct.sizeOptions) {
         return isRemoteValid && isPaymentValid && isContactValid && selectedSize !== "" && downloadLink.trim().length > 5;
       }
@@ -454,6 +471,8 @@ export default function App() {
     setFormCategory("rent");
     setFormIsAvailable(true);
     setFormRequiresSN(false);
+    setFormRequiresUsername(false);
+    setFormRequiresEmail(false);
     setFormHideQuantity(false);
     setFormTooltip("");
     setIsAddingProduct(true);
@@ -468,6 +487,8 @@ export default function App() {
     setFormCategory(prod.category);
     setFormIsAvailable(prod.isAvailable !== false);
     setFormRequiresSN(!!prod.requiresSN);
+    setFormRequiresUsername(!!prod.requiresUsername);
+    setFormRequiresEmail(!!prod.requiresEmail);
     setFormHideQuantity(!!prod.hideQuantity);
     setFormTooltip(prod.tooltip || "");
     setEditingProduct(prod);
@@ -489,6 +510,8 @@ export default function App() {
       category: formCategory,
       isAvailable: formIsAvailable,
       requiresSN: formRequiresSN,
+      requiresUsername: formRequiresUsername,
+      requiresEmail: formRequiresEmail,
       hideQuantity: formHideQuantity,
       tooltip: formTooltip.trim() || undefined,
     };
@@ -787,6 +810,8 @@ export default function App() {
                               setSelectedSize(""); 
                               setDownloadLink(product.downloadLink || ""); 
                               setSn("");
+                              setUsername("");
+                              setEmail("");
                             }}
                             className={`p-3 rounded-lg border bg-slate-50/50 dark:bg-slate-900/40 flex items-center gap-3.5 group relative cursor-pointer hover:border-[#027a78] hover:shadow-md transition-all ${
                               available ? 'border-slate-200 dark:border-slate-800' : 'border-rose-500/20 opacity-75'
@@ -1186,6 +1211,7 @@ export default function App() {
                                 {/* Order Client Filled Fields Details */}
                                 <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl space-y-2 text-xs font-medium text-slate-500 dark:text-slate-300">
                                   {order.details.sn && <p>• <span className="font-bold">SN:</span> {order.details.sn}</p>}
+                                  {order.details.username && <p>• <span className="font-bold">Username:</span> {order.details.username}</p>}
                                   {order.details.email && <p>• <span className="font-bold">Email:</span> {order.details.email}</p>}
                                   {order.details.whatsappNumber && <p>• <span className="font-bold">WhatsApp:</span> {order.details.whatsappNumber}</p>}
                                   {order.details.size && <p>• <span className="font-bold">Size:</span> {order.details.size}</p>}
@@ -1409,15 +1435,49 @@ export default function App() {
                         </div>
                       )}
 
-                      {/* Contact Fields */}
-                      {(selectedProduct.category === 'credit' || selectedProduct.category === 'server') && (
+                      {/* Username Field */}
+                      {selectedProduct.requiresUsername && (
                         <div>
-                          <label className="text-xs font-black text-slate-400 uppercase tracking-wider block mb-1">{selectedProduct.category === 'credit' ? t.emailLabel : t.whatsappNumberLabel}</label>
+                          <label className="text-xs font-black text-slate-400 uppercase tracking-wider block mb-1">
+                            {lang === 'ar' ? 'اسم المستخدم (Enter Username)' : 'Enter Username'}
+                          </label>
                           <input 
-                            type={selectedProduct.category === 'credit' ? 'email' : 'text'} 
-                            value={selectedProduct.category === 'credit' ? email : whatsappNumber} 
-                            onChange={(e) => selectedProduct.category === 'credit' ? setEmail(e.target.value) : setWhatsappNumber(e.target.value)} 
-                            placeholder={selectedProduct.category === 'credit' ? "name@domain.com" : "01xxxxxxxxx"} 
+                            type="text" 
+                            value={username} 
+                            onChange={(e) => setUsername(e.target.value)} 
+                            placeholder="Username" 
+                            className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-xs focus:border-gold outline-none font-bold" 
+                          />
+                        </div>
+                      )}
+
+                      {/* Email Field */}
+                      {(selectedProduct.requiresEmail || selectedProduct.category === 'credit') && (
+                        <div>
+                          <label className="text-xs font-black text-slate-400 uppercase tracking-wider block mb-1">
+                            {lang === 'ar' ? 'البريد الإلكتروني (Enter Email)' : 'Enter Email'}
+                          </label>
+                          <input 
+                            type="email" 
+                            value={email} 
+                            onChange={(e) => setEmail(e.target.value)} 
+                            placeholder="Enter Email" 
+                            className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-xs focus:border-gold outline-none font-bold" 
+                          />
+                        </div>
+                      )}
+
+                      {/* WhatsApp / Phone field */}
+                      {selectedProduct.category === 'server' && (
+                        <div>
+                          <label className="text-xs font-black text-slate-400 uppercase tracking-wider block mb-1">
+                            {t.whatsappNumberLabel} {selectedProduct.requiresEmail && <span className="text-slate-400 font-normal">({lang === 'ar' ? 'اختياري للتواصل' : 'Optional'})</span>}
+                          </label>
+                          <input 
+                            type="text" 
+                            value={whatsappNumber} 
+                            onChange={(e) => setWhatsappNumber(e.target.value)} 
+                            placeholder="01xxxxxxxxx" 
                             className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-xs focus:border-gold outline-none font-bold" 
                           />
                         </div>
@@ -1571,6 +1631,16 @@ export default function App() {
                 <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
                   <span className="font-bold text-slate-400">Requires SN (Serial Number)</span>
                   <input type="checkbox" checked={formRequiresSN} onChange={(e) => setFormRequiresSN(e.target.checked)} className="w-4 h-4 text-gold" />
+                </div>
+
+                <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                  <span className="font-bold text-slate-400">{lang === 'ar' ? 'طلب اسم المستخدم (Username)' : 'Requires Username'}</span>
+                  <input type="checkbox" checked={formRequiresUsername} onChange={(e) => setFormRequiresUsername(e.target.checked)} className="w-4 h-4 text-gold" />
+                </div>
+
+                <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                  <span className="font-bold text-slate-400">{lang === 'ar' ? 'طلب البريد الإلكتروني (Email)' : 'Requires Email'}</span>
+                  <input type="checkbox" checked={formRequiresEmail} onChange={(e) => setFormRequiresEmail(e.target.checked)} className="w-4 h-4 text-gold" />
                 </div>
 
                 <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">

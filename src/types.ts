@@ -12,6 +12,8 @@ export interface Product {
   sizePrices?: { [key: string]: number };
   tooltip?: string;
   requiresSN?: boolean;
+  requiresUsername?: boolean;
+  requiresEmail?: boolean;
   downloadLink?: string;
   isAvailable?: boolean;
   sortOrder?: number;
@@ -31,6 +33,7 @@ export interface Order {
   paymentType: PaymentType;
   details: {
     sn?: string;
+    username?: string;
     email?: string;
     whatsappNumber?: string;
     remoteTool?: RemoteTool;

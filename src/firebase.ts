@@ -93,6 +93,9 @@ export const TOOL_PERMANENT_IMAGES: Record<number, string> = {
   201: "./tools/apple-id.svg",
   202: "./tools/halabtech.svg",
   203: "./tools/honor-frp.svg",
+  204: "./tools/unlock-tool.png",
+  205: "./tools/unlock-tool.png",
+  206: "./tools/unlock-tool.png",
   1783948579571: "./tools/xiaomi-frp.svg"
 };
 
@@ -134,8 +137,7 @@ export async function deleteProductFromDb(productId: number) {
   await deleteDoc(docRef);
 }
 
-// Initialize default products ONLY if database is truly empty (0 products)
-// Never touches or overwrites existing products in Firestore
+// Initialize default products and add any new default products to Firestore
 export async function seedProductsIfEmpty(defaultProducts: Product[]) {
   try {
     const snapshot = await getDocs(productsCollection);
@@ -143,6 +145,20 @@ export async function seedProductsIfEmpty(defaultProducts: Product[]) {
       console.log("Seeding default products in Firestore...");
       for (const product of defaultProducts) {
         await saveProductToDb(product);
+      }
+    } else {
+      const existingMap = new Map<number, any>();
+      snapshot.docs.forEach(d => existingMap.set(Number(d.id), d.data()));
+      for (const product of defaultProducts) {
+        if (!existingMap.has(product.id)) {
+          console.log(`Adding new default product ${product.name} to Firestore...`);
+          await saveProductToDb(product);
+        } else {
+          const existing = existingMap.get(product.id);
+          if (product.id === 204 && (!existing.requiresUsername || !existing.requiresEmail)) {
+            await saveProductToDb({ ...existing, ...product });
+          }
+        }
       }
     }
   } catch (err) {

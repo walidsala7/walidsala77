@@ -97,6 +97,48 @@ export const productsData: Product[] = [
       hideQuantity: true, 
       tooltip: "android 15&16\nhttps://mega.nz/file/aHJVWTJL#Vd0e_2N-VCkwDT0QIPoTgKlZ8th4iJcQ1-F1r0D7OuA" 
     },
+    { 
+      id: 204, 
+      name: "Unlock Tool 3 Months", 
+      nameEn: "Unlock Tool 3 Months", 
+      priceUsd: 20, 
+      duration: "1-6 Hours", 
+      image: "./tools/unlock-tool.png", 
+      category: 'server', 
+      isAvailable: true, 
+      requiresUsername: true, 
+      requiresEmail: true, 
+      hideQuantity: true, 
+      tooltip: "Unlock Tool 3 Months Activation. Delivery: 1-6 Hours. Please provide your Username and Email." 
+    },
+    { 
+      id: 205, 
+      name: "Unlock Tool 6 Months", 
+      nameEn: "Unlock Tool 6 Months", 
+      priceUsd: 25, 
+      duration: "1-6 Hours", 
+      image: "./tools/unlock-tool.png", 
+      category: 'server', 
+      isAvailable: true, 
+      requiresUsername: true, 
+      requiresEmail: true, 
+      hideQuantity: true, 
+      tooltip: "Unlock Tool 6 Months Activation. Delivery: 1-6 Hours. Please provide your Username and Email." 
+    },
+    { 
+      id: 206, 
+      name: "Unlock Tool 1 Year", 
+      nameEn: "Unlock Tool 1 Year", 
+      priceUsd: 45, 
+      duration: "1-6 Hours", 
+      image: "./tools/unlock-tool.png", 
+      category: 'server', 
+      isAvailable: true, 
+      requiresUsername: true, 
+      requiresEmail: true, 
+      hideQuantity: true, 
+      tooltip: "Unlock Tool 1 Year Activation. Delivery: 1-6 Hours. Please provide your Username and Email." 
+    },
 ];
 
 export const translations = {

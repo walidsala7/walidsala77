@@ -1,8 +1,9 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { exec } = require('child_process');
 
-const PORT = process.env.APP_PORT || 3081;
+const PORT = 3000;
 const DIST_DIR = path.join(__dirname, 'dist');
 
 const MIME_TYPES = {
@@ -27,7 +28,6 @@ const server = http.createServer((req, res) => {
   
   let filePath = path.join(DIST_DIR, cleanUrl);
   
-  // SPA Fallback: if file doesn't exist, serve index.html
   if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
     filePath = path.join(DIST_DIR, 'index.html');
   }
@@ -51,10 +51,16 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`========================================================`);
-  console.log(` Smart Phone Web Server is running!`);
-  console.log(` Port: ${PORT}`);
-  console.log(` Local URL:  http://localhost:${PORT}`);
-  console.log(` Public URL: http://148.113.6.63:${PORT}`);
-  console.log(`========================================================`);
+  console.log(`================================================================`);
+  console.log(`       🚀 موقع Smart Phone يعمل الآن بنجاح!`);
+  console.log(`================================================================`);
+  console.log(` تم فتح الموقع تلقائياً في المتصفح.`);
+  console.log(` لإيقاف الموقع: أغلق هذه النافذة فقط.`);
+  console.log(`================================================================`);
+
+  if (process.platform === 'win32') {
+    exec(`start http://localhost:${PORT}`);
+  } else if (process.platform === 'darwin') {
+    exec(`open http://localhost:${PORT}`);
+  }
 });

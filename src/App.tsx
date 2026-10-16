@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Search, Wallet, Smartphone, QrCode, X, Monitor, Laptop, AlertTriangle, Check, CheckCircle2,
   XCircle, Clock, CreditCard, Hash, User, Mail, Phone, Facebook, Instagram, Link,
   ChevronRight, AlertCircle, ArrowRight, ShieldCheck, Zap, Info, Moon, Sun, Home, Menu,
   Plus, Trash2, Edit3, Save, Lock, Unlock, Settings, Headphones, ClipboardList, LogOut,
-  Eye, EyeOff
+  Eye, EyeOff, Download
 } from 'lucide-react';
 import { 
   TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, EXCHANGE_RATE, CASH_FEE_EGP, VODAFONE_NUMBER, 
@@ -63,6 +63,7 @@ export default function App() {
   const [orderId, setOrderId] = useState<number | null>(null);
   const [orderStatus, setOrderStatus] = useState<OrderStatus>("pending");
   const [lastUpdateId, setLastUpdateId] = useState(0);
+  const lastUpdateIdRef = useRef(0);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Checkout form fields
@@ -256,17 +257,20 @@ export default function App() {
     const isWaitingForMyOrder = orderSuccess && orderStatus === "pending" && !!orderId;
     if (isWaitingForMyOrder) {
       let isFetching = false;
-      pollInterval = setInterval(async () => {
+      const pollUpdates = async () => {
         if (isFetching) return;
         isFetching = true;
         try {
-          const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}`);
+          const currentOffset = lastUpdateIdRef.current ? lastUpdateIdRef.current + 1 : 0;
+          const res = await fetch(
+            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=${currentOffset}&allowed_updates=%5B%22message%22%2C%22callback_query%22%5D`
+          );
           if (res.status === 429) {
             return;
           }
           const data = await res.json();
           if (data && data.ok && Array.isArray(data.result) && data.result.length > 0) {
-            let maxUpdateId = lastUpdateId;
+            let maxUpdateId = lastUpdateIdRef.current;
 
             for (const update of data.result) {
               maxUpdateId = Math.max(maxUpdateId, update.update_id);
@@ -275,14 +279,40 @@ export default function App() {
               let id = '';
 
               if (update.callback_query && update.callback_query.data) {
-                const [act, ordId] = update.callback_query.data.split('_');
-                action = act;
-                id = ordId;
-                fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery?callback_query_id=${update.callback_query.id}`).catch(() => {});
+                const parts = update.callback_query.data.split('_');
+                action = parts[0]?.toLowerCase() || '';
+                id = parts[1] || '';
+
+                // Acknowledge callback immediately in Telegram UI
+                fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    callback_query_id: update.callback_query.id,
+                    text: action === 'accept' ? 'تم قبول وتأكيد الطلب بنجاح ✅' : 'تم رفض الطلب ❌'
+                  })
+                }).catch(() => {});
+
+                // Update Telegram message inline to remove buttons and show confirmation tag
+                if (update.callback_query.message) {
+                  const origText = update.callback_query.message.text || '';
+                  const statusNote = action === 'accept' ? '\n\n✅ [تم القبول وتأكيد الطلب للعميل]' : '\n\n❌ [تم الرفض]';
+                  fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      chat_id: update.callback_query.message.chat.id,
+                      message_id: update.callback_query.message.message_id,
+                      text: origText + statusNote,
+                      reply_markup: { inline_keyboard: [] }
+                    })
+                  }).catch(() => {});
+                }
               } else {
                 const msgText = update.message?.text || update.channel_post?.text;
                 if (msgText) {
                   const trimmed = msgText.trim();
+                  // Support format: accept_123456 or reject_123456
                   if (trimmed.includes('_')) {
                     const parts = trimmed.split('_');
                     if (parts.length >= 2) {
@@ -292,28 +322,45 @@ export default function App() {
                         id = parts[1].split('\n')[0].trim();
                       }
                     }
+                  } else {
+                    // Support format: "accept 123456" or "قبول 123456"
+                    const parts = trimmed.split(/\s+/);
+                    if (parts.length >= 2) {
+                      const act = parts[0].toLowerCase();
+                      if (act === 'accept' || act === 'قبول') {
+                        action = 'accept';
+                        id = parts[1].trim();
+                      } else if (act === 'reject' || act === 'رفض') {
+                        action = 'reject';
+                        id = parts[1].trim();
+                      }
+                    }
                   }
                 }
               }
 
               if (action && id) {
-                if (orderId && id === orderId.toString()) {
+                if (orderId && id.toString() === orderId.toString()) {
                   if (action === 'accept') setOrderStatus("accepted");
                   if (action === 'reject') setOrderStatus("rejected");
                 }
                 updateOrderStatusInDb(Number(id), action === 'accept' ? 'accepted' : 'rejected').catch(() => {});
               }
             }
+            lastUpdateIdRef.current = maxUpdateId;
             setLastUpdateId(maxUpdateId);
           }
         } catch (e) {
         } finally {
           isFetching = false;
         }
-      }, 5000);
+      };
+
+      pollUpdates();
+      pollInterval = setInterval(pollUpdates, 2500);
     }
     return () => clearInterval(pollInterval);
-  }, [orderSuccess, orderStatus, orderId, lastUpdateId]);
+  }, [orderSuccess, orderStatus, orderId]);
 
   // Checkout timer
   useEffect(() => {
@@ -933,8 +980,15 @@ export default function App() {
                             </span>
                           </div>
                           <p className="text-[10px] text-slate-400 font-bold">{new Date(order.timestamp).toLocaleString()}</p>
+                          {(order.details.username || order.details.email || order.details.sn) && (
+                            <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                              {order.details.username && <span className="bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded font-mono font-bold">👤 {order.details.username}</span>}
+                              {order.details.email && <span className="bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded font-mono font-bold">📧 {order.details.email}</span>}
+                              {order.details.sn && <span className="bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded font-mono font-bold">🆔 {order.details.sn}</span>}
+                            </div>
+                          )}
                         </div>
-                        <div className="shrink-0 flex items-center gap-3">
+                        <div className="shrink-0 flex items-center gap-2 flex-wrap justify-center sm:justify-end">
                           <span className="text-sm font-black text-gold bg-gold/5 border border-gold/10 px-3 py-1 rounded-lg">{order.totalPrice}</span>
                           <button 
                             onClick={() => handleCopy(order.id.toString(), order.id.toString())}
@@ -942,6 +996,19 @@ export default function App() {
                           >
                             {copyStatus === order.id.toString() ? t.copied : `ID: ${order.id}`}
                           </button>
+                          {order.status === 'accepted' && (
+                            <a
+                              href={`https://wa.me/201002240615?text=${encodeURIComponent(
+                                `مرحباً أستاذ وليد، تم قبول طلبي بنجاح على الموقع ✅\n🔢 رقم الطلب: #${order.id}\n📦 الخدمة: ${order.productName}\n${order.details.username ? `👤 اسم المستخدم: ${order.details.username}\n` : ''}${order.details.email ? `📧 البريد: ${order.details.email}\n` : ''}أرجو إرسال بيانات التفعيل / التسليم.`
+                              )}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
+                            >
+                              <WhatsAppIcon className="w-3.5 h-3.5" />
+                              <span>{lang === 'ar' ? 'تواصل للاستلام' : 'Claim on WhatsApp'}</span>
+                            </a>
+                          )}
                         </div>
                       </div>
                     ));
@@ -1317,13 +1384,162 @@ export default function App() {
                         <p className="text-slate-400 font-bold text-xs leading-relaxed max-w-[280px] mx-auto">{t.waitOwner}</p>
                       </div>
                     ) : orderStatus === "accepted" ? (
-                      <div className="space-y-4">
-                        <CheckCircle2 className="mx-auto text-emerald-500 animate-bounce" size={64} />
-                        <h3 className="font-black text-xl uppercase tracking-tight">{t.accepted}</h3>
-                        <p className="text-slate-400 font-bold text-xs">{t.acceptedMsg}</p>
-                        <button onClick={() => setSelectedProduct(null)} className="w-full py-4 bg-gold text-[#060B18] rounded-xl font-black text-sm uppercase">
-                          {t.close}
-                        </button>
+                      <div className="space-y-4 text-right" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+                        {/* Header Badge */}
+                        <div className="text-center space-y-2">
+                          <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto border border-emerald-500/30">
+                            <CheckCircle2 size={36} className="animate-bounce" />
+                          </div>
+                          <h3 className="font-black text-xl text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">
+                            {lang === 'ar' ? 'تم قبول وتأكيد طلبك بنجاح! 🎉' : 'Order Confirmed & Activated! 🎉'}
+                          </h3>
+                          <p className="text-slate-500 dark:text-slate-400 font-bold text-xs max-w-sm mx-auto leading-relaxed">
+                            {lang === 'ar' 
+                              ? 'تم تأكيد عملية الدفع واعتماد طلبك من الإدارة. بيانات طلبك جاهزة أدناه ويمكنك استلام التفعيل فوراً.' 
+                              : 'Payment has been verified and your order is confirmed! Your service is ready below.'}
+                          </p>
+                        </div>
+
+                        {/* Order Confirmation & Delivery Details Card */}
+                        <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-emerald-500/30 space-y-3.5 shadow-sm">
+                          {/* Order ID & Status Banner */}
+                          <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700/60">
+                            <div>
+                              <span className="text-[10px] font-black uppercase text-slate-400 block tracking-wider">
+                                {lang === 'ar' ? 'كود الطلب' : 'ORDER ID'}
+                              </span>
+                              <span className="font-mono font-black text-lg text-slate-900 dark:text-white">
+                                #{orderId}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => handleCopy(orderId?.toString() || "", 'order_code_accepted')}
+                              className="px-3 py-1.5 bg-white dark:bg-slate-700 text-gold border border-gold/30 hover:border-gold rounded-xl font-black text-xs transition-all shadow-sm active:scale-95 flex items-center gap-1.5"
+                            >
+                              <Check size={12} />
+                              <span>{copyStatus === 'order_code_accepted' ? t.copied : t.copyCode}</span>
+                            </button>
+                          </div>
+
+                          {/* Product & Summary */}
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 p-1 shrink-0 flex items-center justify-center">
+                              <img 
+                                src={getSafeProductImage(selectedProduct)} 
+                                alt="" 
+                                className="w-full h-full object-contain" 
+                              />
+                            </div>
+                            <div className="min-w-0 flex-grow">
+                              <h4 className="font-black text-xs text-slate-900 dark:text-white truncate">
+                                {lang === 'en' && selectedProduct.nameEn ? selectedProduct.nameEn : selectedProduct.name}
+                              </h4>
+                              <p className="text-[11px] font-extrabold text-gold">
+                                {formatPrice(
+                                  (selectedProduct.sizeOptions && selectedSize && selectedProduct.sizePrices?.[selectedSize]) 
+                                    ? selectedProduct.sizePrices[selectedSize] 
+                                    : selectedProduct.priceUsd, 
+                                  true, 
+                                  selectedProduct.category !== 'rent'
+                                )}
+                              </p>
+                            </div>
+                            {selectedProduct.duration && (
+                              <span className="bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-black text-[10px] px-2.5 py-1 rounded-lg uppercase shrink-0">
+                                {selectedProduct.duration}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Filled User Details */}
+                          <div className="bg-white dark:bg-[#060B18] p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1.5 text-xs font-bold text-slate-700 dark:text-slate-200">
+                            <div className="text-[10px] font-black uppercase text-[#027a78] dark:text-teal-400 mb-1">
+                              {lang === 'ar' ? '📋 بيانات الاستلام والتفعيل المسجلة:' : '📋 Registered Activation Details:'}
+                            </div>
+                            {username && (
+                              <div className="flex justify-between items-center py-0.5">
+                                <span className="text-slate-400">{lang === 'ar' ? 'اسم المستخدم (Username):' : 'Username:'}</span>
+                                <span className="font-mono font-black text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">{username}</span>
+                              </div>
+                            )}
+                            {email && (
+                              <div className="flex justify-between items-center py-0.5">
+                                <span className="text-slate-400">{lang === 'ar' ? 'البريد الإلكتروني (Email):' : 'Email:'}</span>
+                                <span className="font-mono font-black text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">{email}</span>
+                              </div>
+                            )}
+                            {sn && (
+                              <div className="flex justify-between items-center py-0.5">
+                                <span className="text-slate-400">{lang === 'ar' ? 'السيريال (SN):' : 'Serial Number:'}</span>
+                                <span className="font-mono font-black text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">{sn}</span>
+                              </div>
+                            )}
+                            {selectedProduct.category === 'rent' && (
+                              <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+                                <p className="text-emerald-600 dark:text-emerald-400 font-extrabold">
+                                  {lang === 'ar' 
+                                    ? `🖥️ سيتم الدخول عبر ${remoteTool === 'ultra' ? 'UltraViewer' : 'AnyDesk'} والبدء فوراً على جهازك.` 
+                                    : `🖥️ Technician will connect via ${remoteTool === 'ultra' ? 'UltraViewer' : 'AnyDesk'} immediately.`}
+                                </p>
+                              </div>
+                            )}
+                            {selectedProduct.category === 'server' && (
+                              <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+                                <p className="text-emerald-600 dark:text-emerald-400 font-extrabold">
+                                  {lang === 'ar' 
+                                    ? `⚡ جاري تفعيل الباقة لحسابك (${username || email || ''}). مدة التسليم: ${selectedProduct.duration || '1-6 ساعات'}.` 
+                                    : `⚡ Account activation in progress. Delivery: ${selectedProduct.duration || '1-6 Hours'}.`}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Direct Download Tool Link if available */}
+                          {selectedProduct.downloadLink && (
+                            <a
+                              href={selectedProduct.downloadLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl font-black text-xs uppercase flex items-center justify-center gap-2 transition-all shadow-sm"
+                            >
+                              <Download size={14} />
+                              <span>{lang === 'ar' ? 'تحميل برنامج الأداة المباشر' : 'Download Tool Software'}</span>
+                            </a>
+                          )}
+                        </div>
+
+                        {/* Instant WhatsApp Delivery & Claim Button */}
+                        <a
+                          href={`https://wa.me/201002240615?text=${encodeURIComponent(
+                            `مرحباً أستاذ وليد، تم قبول طلبي بنجاح على الموقع ✅\n🔢 رقم الطلب: #${orderId}\n📦 الخدمة: ${selectedProduct.name}\n${username ? `👤 اسم المستخدم: ${username}\n` : ''}${email ? `📧 البريد: ${email}\n` : ''}${sn ? `🆔 SN: ${sn}\n` : ''}أرجو إرسال بيانات التفعيل / التسليم.`
+                          )}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/20"
+                        >
+                          <WhatsAppIcon className="w-5 h-5" />
+                          <span>{lang === 'ar' ? 'استلام بيانات التفعيل عبر واتساب فوراً' : 'Claim Activation Details via WhatsApp'}</span>
+                        </a>
+
+                        {/* Navigation Actions */}
+                        <div className="flex gap-2 pt-1">
+                          <button 
+                            onClick={() => {
+                              setSelectedProduct(null);
+                              setActiveTab('orders');
+                              setSearchQuery(orderId ? orderId.toString() : '');
+                            }}
+                            className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-xs transition-all"
+                          >
+                            {lang === 'ar' ? 'عرض في سجل الطلبات' : 'View in Orders History'}
+                          </button>
+                          <button 
+                            onClick={() => setSelectedProduct(null)} 
+                            className="flex-1 py-3 bg-gold text-[#060B18] hover:opacity-90 rounded-xl font-black text-xs uppercase transition-all"
+                          >
+                            {t.close}
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div className="space-y-4">

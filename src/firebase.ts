@@ -191,5 +191,5 @@ export async function saveOrderToDb(order: Order) {
 // Update order status in Db
 export async function updateOrderStatusInDb(orderId: number, status: Order["status"]) {
   const docRef = doc(ordersCollection, orderId.toString());
-  await updateDoc(docRef, { status });
+  await setDoc(docRef, { status }, { merge: true });
 }
